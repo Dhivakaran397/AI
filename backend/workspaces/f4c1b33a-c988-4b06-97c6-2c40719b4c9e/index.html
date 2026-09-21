@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interactive Weekly Timetable</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+          },
+          boxShadow: {
+            'glow-blue': '0 0 15px -3px rgba(59, 130, 246, 0.4)',
+            'glow-purple': '0 0 15px -3px rgba(139, 92, 246, 0.4)',
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- React & ReactDOM CDN -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  
+  <!-- Babel Standalone CDN -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Google Font: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      user-select: none;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(156, 163, 175, 0.3);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(156, 163, 175, 0.5);
+    }
+
+    @media print {
+      .no-print {
+        display: none !important;
+      }
+      body {
+        background: white !important;
+        color: black !important;
+      }
+      .print-border {
+        border: 1px solid #e2e8f0 !important;
+      }
+    }
+
+    /* Pulse animation for current time indicator dot */
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+    .live-dot {
+      animation: pulse-ring 2s infinite;
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen antialiased transition-colors duration-200">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useMemo, useRef } = React;
+
+    // --- COLOR THEME DEFINITIONS ---
+    const COLOR_THEMES = {
+      blue: {
+        id: 'blue',
+        label: 'Blue',
+        bg: 'bg-blue-500/15 hover:bg-blue-500/25 dark:bg-blue-500/20 dark:hover:bg-blue-500/30',
+        border: 'border-blue-500',
+        text: 'text-blue-900 dark:text-blue-200',
+        subtext: 'text-blue-700 dark:text-blue-300',
+        badge: 'bg-blue-500 text-white',
+        dot: 'bg-blue-500'
+      },
+      emerald: {
+        id: 'emerald',
+        label: 'Emerald',
+        bg: 'bg-emerald-500/15 hover:bg-emerald-500/25 dark:bg-emerald-500/20 dark:hover:bg-emerald-500/30',
+        border: 'border-emerald-500',
+        text: 'text-emerald-900 dark:text-emerald-200',
+        subtext: 'text-emerald-700 dark:text-emerald-300',
+        badge: 'bg-emerald-500 text-white',
+        dot: 'bg-emerald-500'
+      },
+      purple: {
+        id: 'purple',
+        label: 'Purple',
+        bg: 'bg-purple-500/15 hover:bg-purple-500/25 dark:bg-purple-500/20 dark:hover:bg-purple-500/30',
+        border: 'border-purple-500',
+        text: 'text-purple-900 dark:text-purple-200',
+        subtext: 'text-purple-700 dark:text-purple-300',
+        badge: 'bg-purple-500 text-white',
+        dot: 'bg-purple-500'
+      },
+      amber: {
+        id: 'amber',
+        label: 'Amber',
+        bg: 'bg-amber-500/15 hover:bg-amber-500/25 dark:bg-amber-500/20 dark:hover:bg-amber-500/30',
+        border: 'border-amber-500',
+        text: 'text-amber-900 dark:text-amber-200',
+        subtext: 'text-amber-700 dark:text-amber-300',
+        badge: 'bg-amber-500 text-white',
+        dot: 'bg-amber-500'
+      },
+      rose: {
+        id: 'rose',
+        label: 'Rose',
+        bg: 'bg-rose-500/15 hover:bg-rose-500/25 dark:bg-rose-500/20 dark:hover:bg-rose-500/30',
+        border: 'border-rose-500',
+        text: 'text-rose-900 dark:text-rose-200',
+        subtext: 'text-rose-700 dark:text-rose-300',
+        badge: 'bg-rose-500 text-white',
+        dot: 'bg-rose-500'
+      },
+      indigo: {
+        id: 'indigo',
+        label: 'Indigo',
+        bg: 'bg-indigo-500/15 hover:bg-indigo-500/25 dark:bg-indigo-500/20 dark:hover:bg-indigo-500/30',
+        border: 'border-indigo-500',
+        text: 'text-indigo-900 dark:text-indigo-200',
+        subtext: 'text-indigo-700 dark:text-indigo-300',
+        badge: 'bg-indigo-500 text-white',
+        dot: 'bg-indigo-500'
+      },
+      cyan: {
+        id: 'cyan',
+        label: 'Cyan',
+        bg: 'bg-cyan-500/15 hover:bg-cyan-500/25 dark:bg-cyan-500/20 dark:hover:bg-cyan-500/30',
+        border: 'border-cyan-500',
+        text: 'text-cyan-900 dark:text-cyan-200',
+        subtext: 'text-cyan-700 dark:text-cyan-300',
+        badge: 'bg-cyan-500 text-white',
+        dot: 'bg-cyan-500'
+      }
+    };
+
+    // --- INITIAL DEMO EVENTS ---
+    const DEFAULT_EVENTS = [
+      {
+        id: '1',
+        title: 'Data Structures & Algorithms',
+        code: 'CS-201 • Room 302',
+        instructor: 'Dr. Alan Turing',
+        day: 'Monday',
+        startTime: '09:00',
+        endTime: '10:30',
+        color: 'blue',
+        notes: 'Covers Binary Trees, Graph Traversal, and Dynamic Programming.'
+      },
+      {
+        id: '2',
+        title: 'Web Application Architecture',
+        code: 'CS-350 • Lab 4',
+        instructor: 'Prof. Ada Lovelace',
+        day: 'Tuesday',
+        startTime: '10:00',
+        endTime: '12:00',
+        color: 'emerald',
+        notes: 'React state hooks, modern CSS, and component design patterns.'
+      },
+      {
+        id: '3',
+        title: 'Linear Algebra',
+        code: 'MATH-210 • Hall B',
+        instructor: 'Dr. Carl Gauss',
+        day: 'Monday',
+        startTime: '11:00',
+        endTime: '12:30',
+        color: 'amber',
+        notes: 'Vector spaces, matrix multiplication, and eigenvalues.'
+      },
+      {
+        id: '4',
+        title: 'UI/UX Design Systems',
+        code: 'DES-105 • Design Studio',
+        instructor: 'Sarah Jenkins',
+        day: 'Wednesday',
+        startTime: '13:00',
+        endTime: '15:00',
+        color: 'purple',
+        notes: 'Figma interactive component library & design systems.'
+      },
+      {
+        id: '5',
+        title: 'Database Systems & SQL',
+        code: 'CS-240 • Hall C',
+        instructor: 'Dr. E. Codd',
+        day: 'Thursday',
+        startTime: '09:00',
+        endTime: '11:00',
+        color: 'indigo',
+        notes: 'Relational algebra, normalization, and index tuning.'
+      },
+      {
+        id: '6',
+        title: 'Cybersecurity Principles',
+        code: 'SEC-101 • Online Zoom',
+        instructor: 'Alex Rivera',
+        day: 'Friday',
+        startTime: '14:00',
+        endTime: '16:00',
+        color: 'rose',
+        notes: 'Cryptography, web vulnerabilities, and network security.'
+      }
+    ];
+
+    const START_HOUR = 8; // 8:00 AM
+    const END_HOUR = 20;  // 8:00 PM (12 hours span)
+    const HOURS = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => START_HOUR + i);
+
+    const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+    const ALL_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+    // Helper functions
+    function timeToMinutes(timeStr) {
+      if (!timeStr) return 0;
+      const [h, m] = timeStr.split(':').map(Number);
+      return h * 60 + m;
+    }
+
+    function formatTimeDisplay(timeStr, format24 = false) {
+      if (!timeStr) return '';
+      const [h, m] = timeStr.split(':').map(Number);
+      if (format24) {
+        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+      }
+      const period = h >= 12 ? 'PM' : 'AM';
+      const displayH = h % 12 === 0 ? 12 : h % 12;
+      const displayM = String(m).padStart(2, '0');
+      return `${displayH}:${displayM} ${period}`;
+    }
+
+    function minutesToGridRow(minutes) {
+      const startMinutes = START_HOUR * 60;
+      const diff = minutes - startMinutes;
+      // 1 hour = 4 grid sub-rows (15 mins per row)
+      // Header is row 1, so row start = Math.floor(diff / 15) + 2
+      const slot = Math.floor(diff / 15);
+      return slot + 2;
+    }
+
+    // MAIN TIMETABLE COMPONENT
+    function Timetable() {
+      // LocalStorage initializers
+      const [events, setEvents] = useState(() => {
+        try {
+          const saved = localStorage.getItem('timetable_events_v2');
+          return saved ? JSON.parse(saved) : DEFAULT_EVENTS;
+        } catch (e) {
+          return DEFAULT_EVENTS;
+        }
+      });
+
+      const [darkMode, setDarkMode] = useState(() => {
+        try {
+          const theme = localStorage.getItem('timetable_theme');
+          return theme ? theme === 'dark' : true;
+        } catch (e) {
+          return true;
+        }
+      });
+
+      const [showWeekends, setShowWeekends] = useState(false);
+      const [use24Hour, setUse24Hour] = useState(false);
+      const [searchQuery, setSearchQuery] = useState('');
+      const [selectedFilterColor, setSelectedFilterColor] = useState('all');
+
+      // Modal States
+      const [isModalOpen, setIsModalOpen] = useState(false);
+      const [editingEvent, setEditingEvent] = useState(null);
+      const [detailModalEvent, setDetailModalEvent] = useState(null);
+
+      // Form State
+      const [formData, setFormData] = useState({
+        title: '',
+        code: '',
+        instructor: '',
+        day: 'Monday',
+        startTime: '09:00',
+        endTime: '10:00',
+        color: 'blue',
+        notes: ''
+      });
+
+      const [formError, setFormError] = useState('');
+
+      // Clock tick for current time indicator
+      const [now, setNow] = useState(new Date());
+
+      useEffect(() => {
+        const timer = setInterval(() => setNow(new Date()), 30000); // refresh every 30s
+        return () => clearInterval(timer);
+      }, []);
+
+      // Persist events & dark mode
+      useEffect(() => {
+        localStorage.setItem('timetable_events_v2', JSON.stringify(events));
+      }, [events]);
+
+      useEffect(() => {
+        localStorage.setItem('timetable_theme', darkMode ? 'dark' : 'light');
+        if (darkMode) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      }, [darkMode]);
+
+      const activeDays = showWeekends ? ALL_DAYS : WEEKDAYS;
+
+      // Current Day Name
+      const currentDayName = useMemo(() => {
+        const dayIdx = now.getDay(); // 0: Sun, 1: Mon...
+        const map = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        return map[dayIdx];
+      }, [now]);
+
+      // Current Time relative percentage for indicator line
+      const currentTimePos = useMemo(() => {
+        const currentMins = now.getHours() * 60 + now.getMinutes();
+        const startMins = START_HOUR * 60;
+        const endMins = END_HOUR * 60;
+        if (currentMins < startMins || currentMins > endMins) return null;
+        const pct = ((currentMins - startMins) / (endMins - startMins)) * 100;
+        return pct;
+      }, [now]);
+
+      // Filtered Events
+      const filteredEvents = useMemo(() => {
+        return events.filter(e => {
+          const matchesSearch = e.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                (e.code && e.code.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                                (e.instructor && e.instructor.toLowerCase().includes(searchQuery.toLowerCase()));
+          const matchesColor = selectedFilterColor === 'all' || e.color === selectedFilterColor;
+          const matchesDay = activeDays.includes(e.day);
+          return matchesSearch && matchesColor && matchesDay;
+        });
+      }, [events, searchQuery, selectedFilterColor, activeDays]);
+
+      // Stats
+      const totalHours = useMemo(() => {
+        return events.reduce((acc, e) => {
+          const dur = (timeToMinutes(e.endTime) - timeToMinutes(e.startTime)) / 60;
+          return acc + (dur > 0 ? dur : 0);
+        }, 0);
+      }, [events]);
+
+      // Modal Handlers
+      const openAddModal = (day = 'Monday', startTime = '09:00') => {
+        setEditingEvent(null);
+        // default end time = start time + 1 hour
+        const [h, m] = startTime.split(':').map(Number);
+        const endH = Math.min(20, h + 1);
+        const endTimeStr = `${String(endH).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+
+        setFormData({
+          title: '',
+          code: '',
+          instructor: '',
+          day,
+          startTime,
+          endTime: endTimeStr,
+          color: 'blue',
+          notes: ''
+        });
+        setFormError('');
+        setIsModalOpen(true);
+      };
+
+      const openEditModal = (eventObj, e) => {
+        if (e) e.stopPropagation();
+        setDetailModalEvent(null);
+        setEditingEvent(eventObj);
+        setFormData({
+          title: eventObj.title,
+          code: eventObj.code || '',
+          instructor: eventObj.instructor || '',
+          day: eventObj.day,
+          startTime: eventObj.startTime,
+          endTime: eventObj.endTime,
+          color: eventObj.color || 'blue',
+          notes: eventObj.notes || ''
+        });
+        setFormError('');
+        setIsModalOpen(true);
+      };
+
+      const handleDeleteEvent = (id, e) => {
+        if (e) e.stopPropagation();
+        if (window.confirm('Are you sure you want to delete this event/class slot?')) {
+          setEvents(prev => prev.filter(item => item.id !== id));
+          if (detailModalEvent && detailModalEvent.id === id) {
+            setDetailModalEvent(null);
+          }
+        }
+      };
+
+      const handleSaveEvent = (e) => {
+        e.preventDefault();
+        setFormError('');
+
+        if (!formData.title.trim()) {
+          setFormError('Please enter a subject or event title.');
+          return;
+        }
+
+        const startMins = timeToMinutes(formData.startTime);
+        const endMins = timeToMinutes(formData.endTime);
+
+        if (endMins <= startMins) {
+          setFormError('End time must be after start time.');
+          return;
+        }
+
+        if (startMins < START_HOUR * 60 || endMins > END_HOUR * 60) {
+          setFormError(`Time slot must be within schedule bounds (${START_HOUR}:00 to ${END_HOUR}:00).`);
+          return;
+        }
+
+        // Check time overlaps on the same day
+        const overlap = events.find(item => {
+          if (editingEvent && item.id === editingEvent.id) return false;
+          if (item.day !== formData.day) return false;
+          const eStart = timeToMinutes(item.startTime);
+          const eEnd = timeToMinutes(item.endTime);
+          return Math.max(startMins, eStart) < Math.min(endMins, eEnd);
+        });
+
+        if (overlap) {
+          if (!window.confirm(`Notice: This overlaps with "${overlap.title}" (${overlap.startTime} - ${overlap.endTime}). Do you still want to save?`)) {
+            return;
+          }
+        }
+
+        if (editingEvent) {
+          setEvents(prev => prev.map(item => item.id === editingEvent.id ? { ...formData, id: editingEvent.id } : item));
+        } else {
+          const newEvent = {
+            ...formData,
+            id: Date.now().toString()
+          };
+          setEvents(prev => [...prev, newEvent]);
+        }
+
+        setIsModalOpen(false);
+      };
+
+      const resetToDemo = () => {
+        if (window.confirm('Reset schedule to default sample classes? This will override custom entries.')) {
+          setEvents(DEFAULT_EVENTS);
+        }
+      };
+
+      const clearAllEvents = () => {
+        if (window.confirm('Clear all entries from timetable?')) {
+          setEvents([]);
+        }
+      };
+
+      return (
+        <div className="min-h-screen flex flex-col bg-slate-900 text-slate-100 dark:bg-slate-900 dark:text-slate-100 bg-slate-50 text-slate-800 transition-colors duration-200">
+          
+          {/* HEADER BAR */}
+          <header className="no-print sticky top-0 z-30 bg-slate-800/90 dark:bg-slate-800/90 bg-white/90 backdrop-blur-md border-b border-slate-700/60 dark:border-slate-700/60 border-slate-200 px-4 lg:px-8 py-3.5 shadow-sm">
+            <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
+              
+              {/* Title & Status */}
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white shadow-lg shadow-blue-500/25">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <h1 className="text-xl font-bold tracking-tight bg-gradient-to-r from-blue-400 via-indigo-300 to-purple-400 bg-clip-text text-transparent dark:from-blue-400 dark:to-purple-400 text-slate-900">
+                      Timetable Schedule
+                    </h1>
+                    <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                      Interactive
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 dark:text-slate-400 text-slate-500">
+                    {now.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })} • {now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center flex-wrap gap-2">
+                
+                {/* Stats Pill */}
+                <div className="hidden sm:flex items-center space-x-3 px-3 py-1.5 rounded-lg bg-slate-700/50 dark:bg-slate-700/50 bg-slate-100 border border-slate-600/50 dark:border-slate-600/50 border-slate-200 text-xs">
+                  <div>
+                    <span className="text-slate-400 dark:text-slate-400 text-slate-500">Classes: </span>
+                    <span className="font-semibold text-blue-400">{events.length}</span>
+                  </div>
+                  <div className="h-3 w-px bg-slate-600"></div>
+                  <div>
+                    <span className="text-slate-400 dark:text-slate-400 text-slate-500">Hours/wk: </span>
+                    <span className="font-semibold text-purple-400">{totalHours.toFixed(1)}h</span>
+                  </div>
+                </div>
+
+                {/* Dark Mode Toggle */}
+                <button
+                  onClick={() => setDarkMode(!darkMode)}
+                  className="p-2 rounded-lg bg-slate-700/50 dark:bg-slate-700/50 bg-slate-100 hover:bg-slate-600/50 text-slate-300 dark:text-slate-300 text-slate-600 border border-slate-600/50 dark:border-slate-600/50 border-slate-200 transition"
+                  title="Toggle Light/Dark Theme"
+                >
+                  {darkMode ? (
+                    <svg className="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                  ) : (
+                    <svg className="w-5 h-5 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                    </svg>
+                  )}
+                </button>
+
+                {/* Print Button */}
+                <button
+                  onClick={() => window.print()}
+                  className="p-2 rounded-lg bg-slate-700/50 dark:bg-slate-700/50 bg-slate-100 hover:bg-slate-600/50 text-slate-300 dark:text-slate-300 text-slate-600 border border-slate-600/50 dark:border-slate-600/50 border-slate-200 transition"
+                  title="Print Timetable"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                  </svg>
+                </button>
+
+                {/* Add Class Button */}
+                <button
+                  onClick={() => openAddModal()}
+                  className="flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-medium text-sm shadow-md shadow-blue-500/20 active:scale-95 transition"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
+                  </svg>
+                  <span>Add Class</span>
+                </button>
+              </div>
+
+            </div>
+          </header>
+
+          {/* CONTROL & FILTER TOOLBAR */}
+          <main className="flex-1 max-w-7xl w-full mx-auto p-4 lg:p-6 space-y-4">
+            
+            <div className="no-print flex flex-col md:flex-row md:items-center justify-between gap-3 bg-slate-800/50 dark:bg-slate-800/50 bg-white p-3.5 rounded-2xl border border-slate-700/50 dark:border-slate-700/50 border-slate-200 shadow-sm">
+              
+              {/* Search Bar */}
+              <div className="relative flex-1 max-w-md">
+                <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input
+                  type="text"
+                  placeholder="Search class, code, or teacher..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-3 py-1.5 text-sm rounded-xl bg-slate-900/60 dark:bg-slate-900/60 bg-slate-100 text-slate-200 dark:text-slate-200 text-slate-800 border border-slate-700/60 dark:border-slate-700/60 border-slate-300 focus:outline-none focus:border-blue-500 transition"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 text-xs"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              {/* Color Filter & Toggles */}
+              <div className="flex items-center flex-wrap gap-2 text-xs">
+                
+                {/* Color Pills */}
+                <div className="flex items-center space-x-1 pr-2 border-r border-slate-700/60 dark:border-slate-700/60 border-slate-200">
+                  <button
+                    onClick={() => setSelectedFilterColor('all')}
+                    className={`px-2.5 py-1 rounded-lg transition ${selectedFilterColor === 'all' ? 'bg-blue-600 text-white font-medium' : 'text-slate-400 hover:text-slate-200'}`}
+                  >
+                    All
+                  </button>
+                  {Object.keys(COLOR_THEMES).map(cKey => (
+                    <button
+                      key={cKey}
+                      onClick={() => setSelectedFilterColor(cKey)}
+                      className={`w-5 h-5 rounded-full ${COLOR_THEMES[cKey].dot} transition transform hover:scale-110 ${selectedFilterColor === cKey ? 'ring-2 ring-white scale-110' : 'opacity-70 hover:opacity-100'}`}
+                      title={`Filter by ${COLOR_THEMES[cKey].label}`}
+                    />
+                  ))}
+                </div>
+
+                {/* Weekend Toggle */}
+                <button
+                  onClick={() => setShowWeekends(!showWeekends)}
+                  className={`px-2.5 py-1.5 rounded-lg border transition ${showWeekends ? 'bg-indigo-600/20 text-indigo-300 border-indigo-500/40' : 'bg-slate-700/30 dark:bg-slate-700/30 bg-slate-100 text-slate-400 border-slate-700 dark:border-slate-700 border-slate-300 hover:text-slate-200'}`}
+                >
+                  {showWeekends ? 'Mon - Sun' : 'Mon - Fri'}
+                </button>
+
+                {/* 12h / 24h Toggle */}
+                <button
+                  onClick={() => setUse24Hour(!use24Hour)}
+                  className="px-2.5 py-1.5 rounded-lg bg-slate-700/30 dark:bg-slate-700/30 bg-slate-100 text-slate-400 dark:text-slate-400 text-slate-600 border border-slate-700 dark:border-slate-700 border-slate-300 hover:text-slate-200 transition font-mono"
+                >
+                  {use24Hour ? '24H' : '12H'}
+                </button>
+
+                {/* Demo Reset Dropdown / Buttons */}
+                <div className="flex items-center space-x-1 pl-2 border-l border-slate-700/60 dark:border-slate-700/60 border-slate-200">
+                  <button
+                    onClick={resetToDemo}
+                    className="px-2 py-1 rounded-lg text-slate-400 hover:text-amber-400 transition"
+                    title="Reset to demo classes"
+                  >
+                    Reset Demo
+                  </button>
+                  <button
+                    onClick={clearAllEvents}
+                    className="px-2 py-1 rounded-lg text-slate-400 hover:text-rose-400 transition"
+                    title="Clear schedule"
+                  >
+                    Clear All
+                  </button>
+                </div>
+
+              </div>
+
+            </div>
+
+            {/* TIMETABLE GRID CONTAINER */}
+            <div className="relative rounded-2xl bg-slate-800/80 dark:bg-slate-800/80 bg-white border border-slate-700/60 dark:border-slate-700/60 border-slate-200 shadow-xl overflow-x-auto print-border">
+              
+              <div 
+                className="grid min-w-[750px]"
+                style={{
+                  gridTemplateColumns: `80px repeat(${activeDays.length}, minmax(130px, 1fr))`,
+                  gridTemplateRows: `50px repeat(${(END_HOUR - START_HOUR) * 4}, 14px)`
+                }}
+              >
+                
+                {/* TOP LEFT CORNER (TIME / DAYS) */}
+                <div className="sticky left-0 top-0 z-20 bg-slate-800 dark:bg-slate-800 bg-slate-100 border-b border-r border-slate-700/60 dark:border-slate-700/60 border-slate-200 flex items-center justify-center text-xs font-semibold text-slate-400 dark:text-slate-400 text-slate-500">
+                  Time
+                </div>
+
+                {/* DAY HEADER COLUMNS */}
+                {activeDays.map((day, dIdx) => {
+                  const isToday = day === currentDayName;
+                  return (
+                    <div
+                      key={day}
+                      className={`sticky top-0 z-20 border-b border-r border-slate-700/60 dark:border-slate-700/60 border-slate-200 px-2 flex flex-col justify-center items-center font-semibold text-sm transition-colors ${
+                        isToday 
+                          ? 'bg-blue-600/15 dark:bg-blue-600/20 bg-blue-50 text-blue-400 dark:text-blue-300 font-bold border-b-2 border-b-blue-500' 
+                          : 'bg-slate-800 dark:bg-slate-800 bg-slate-50 text-slate-300 dark:text-slate-300 text-slate-700'
+                      }`}
+                      style={{ gridColumn: dIdx + 2, gridRow: 1 }}
+                    >
+                      <div className="flex items-center space-x-1.5">
+                        <span>{day}</span>
+                        {isToday && (
+                          <span className="px-1.5 py-0.2 text-[10px] uppercase font-bold rounded-full bg-blue-500 text-white tracking-wider">
+                            Today
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* TIME SIDEBAR LABELS */}
+                {HOURS.map((hour, hIdx) => {
+                  const timeLabel = formatTimeDisplay(`${String(hour).padStart(2, '0')}:00`, use24Hour);
+                  const rowStart = hIdx * 4 + 2;
+                  return (
+                    <div
+                      key={hour}
+                      className="sticky left-0 z-10 bg-slate-800/90 dark:bg-slate-800/90 bg-slate-50/90 backdrop-blur-sm border-r border-b border-slate-700/40 dark:border-slate-700/40 border-slate-200 text-right pr-2.5 text-[11px] font-mono text-slate-400 dark:text-slate-400 text-slate-500 select-none"
+                      style={{
+                        gridColumn: 1,
+                        gridRow: `${rowStart} / span 4`
+                      }}
+                    >
+                      <span className="-mt-2.5 inline-block">{timeLabel}</span>
+                    </div>
+                  );
+                })}
+
+                {/* BACKGROUND GRID CELLS / HOVER ACTION SLOTS */}
+                {activeDays.map((day, dIdx) => {
+                  const isToday = day === currentDayName;
+                  return HOURS.map((hour, hIdx) => {
+                    const rowStart = hIdx * 4 + 2;
+                    const timeString = `${String(hour).padStart(2, '0')}:00`;
+
+                    return (
+                      <div
+                        key={`${day}-${hour}`}
+                        onClick={() => openAddModal(day, timeString)}
+                        className={`group relative border-r border-b border-slate-700/30 dark:border-slate-700/30 border-slate-100 transition-colors cursor-pointer hover:bg-blue-500/10 dark:hover:bg-blue-500/10 ${
+                          isToday ? 'bg-blue-500/[0.02] dark:bg-blue-500/[0.03]' : ''
+                        }`}
+                        style={{
+                          gridColumn: dIdx + 2,
+                          gridRow: `${rowStart} / span 4`
+                        }}
+                      >
+                        {/* Hover Quick Add Plus Icon */}
+                        <div className="opacity-0 group-hover:opacity-100 absolute inset-0 flex items-center justify-center transition-opacity">
+                          <span className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold shadow-md transform scale-90 group-hover:scale-100 transition-transform">
+                            +
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  });
+                })}
+
+                {/* CURRENT TIME RED INDICATOR LINE */}
+                {currentTimePos !== null && activeDays.includes(currentDayName) && (
+                  <div
+                    className="pointer-events-none z-20 relative col-span-1"
+                    style={{
+                      gridColumn: activeDays.indexOf(currentDayName) + 2,
+                      gridRow: `2 / span ${(END_HOUR - START_HOUR) * 4}`,
+                      top: `${currentTimePos}%`
+                    }}
+                  >
+                    <div className="absolute inset-x-0 border-t-2 border-red-500 shadow-sm flex items-center">
+                      <div className="w-2.5 h-2.5 rounded-full bg-red-500 -ml-1.25 live-dot"></div>
+                    </div>
+                  </div>
+                )}
+
+                {/* DYNAMICALLY RENDERED EVENT CARDS */}
+                {filteredEvents.map(event => {
+                  const dayIndex = activeDays.indexOf(event.day);
+                  if (dayIndex === -1) return null;
+
+                  const startMins = timeToMinutes(event.startTime);
+                  const endMins = timeToMinutes(event.endTime);
+
+                  const rowStart = minutesToGridRow(startMins);
+                  const rowEnd = minutesToGridRow(endMins);
+
+                  const theme = COLOR_THEMES[event.color] || COLOR_THEMES.blue;
+
+                  return (
+                    <div
+                      key={event.id}
+                      onClick={() => setDetailModalEvent(event)}
+                      className={`group relative z-10 m-0.5 p-2 rounded-xl border-l-4 ${theme.border} ${theme.bg} ${theme.text} shadow-sm transition-all duration-150 hover:-translate-y-0.5 hover:shadow-md hover:z-20 cursor-pointer flex flex-col justify-between overflow-hidden`}
+                      style={{
+                        gridColumn: dayIndex + 2,
+                        gridRow: `${rowStart} / ${rowEnd}`
+                      }}
+                    >
+                      {/* Event Header & Delete Button */}
+                      <div>
+                        <div className="flex items-start justify-between gap-1">
+                          <h3 className="font-bold text-xs leading-snug line-clamp-2">
+                            {event.title}
+                          </h3>
+                          
+                          {/* Quick Delete X Icon */}
+                          <button
+                            onClick={(e) => handleDeleteEvent(event.id, e)}
+                            className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-black/10 dark:hover:bg-white/10 text-slate-400 hover:text-rose-500 transition-opacity"
+                            title="Delete Slot"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+
+                        {/* Location / Room Tag */}
+                        {event.code && (
+                          <p className={`text-[11px] font-medium mt-0.5 ${theme.subtext} truncate`}>
+                            {event.code}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Event Footer: Time Badge */}
+                      <div className="mt-1 flex items-center justify-between text-[10px] font-mono opacity-90">
+                        <span>
+                          {formatTimeDisplay(event.startTime, use24Hour)} - {formatTimeDisplay(event.endTime, use24Hour)}
+                        </span>
+                        
+                        {/* Instructor indicator */}
+                        {event.instructor && (
+                          <span className="hidden sm:inline-block w-1.5 h-1.5 rounded-full bg-current opacity-60"></span>
+                        )}
+                      </div>
+
+                    </div>
+                  );
+                })}
+
+              </div>
+
+            </div>
+
+            {/* EMPTY STATE WARNING IF NO EVENTS FOUND */}
+            {filteredEvents.length === 0 && (
+              <div className="text-center py-12 bg-slate-800/30 dark:bg-slate-800/30 bg-white rounded-2xl border border-dashed border-slate-700/60 dark:border-slate-700/60 border-slate-300">
+                <svg className="w-12 h-12 mx-auto text-slate-500 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p className="text-slate-300 font-medium text-sm">No schedule slots match your filter.</p>
+                <p className="text-slate-500 text-xs mt-1">Try clearing your search query or add a new class entry.</p>
+                <button
+                  onClick={() => openAddModal()}
+                  className="mt-4 px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-semibold hover:bg-blue-500 transition"
+                >
+                  + Add Event Slot
+                </button>
+              </div>
+            )}
+
+          </main>
+
+          {/* FOOTER */}
+          <footer className="no-print border-t border-slate-800 dark:border-slate-800 border-slate-200 py-4 px-6 text-center text-xs text-slate-500">
+            Interactive Weekly Timetable Application • Modern Responsive Schedule Planner
+          </footer>
+
+          {/* ADD / EDIT EVENT MODAL */}
+          {isModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
+              <div 
+                className="w-full max-w-md bg-slate-800 dark:bg-slate-800 bg-white rounded-2xl border border-slate-700 dark:border-slate-700 border-slate-200 shadow-2xl overflow-hidden"
+                onClick={(e) => e.stopPropagation()}
+              >
+                
+                {/* Modal Header */}
+                <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700 dark:border-slate-700 border-slate-200">
+                  <h2 className="text-lg font-bold text-slate-100 dark:text-slate-100 text-slate-800">
+                    {editingEvent ? 'Edit Class Slot' : 'Add New Class Slot'}
+                  </h2>
+                  <button
+                    onClick={() => setIsModalOpen(false)}
+                    className="text-slate-400 hover:text-slate-200 p-1 rounded-lg"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                {/* Form */}
+                <form onSubmit={handleSaveEvent} className="p-6 space-y-4 text-sm">
+                  
+                  {formError && (
+                    <div className="p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-400 text-xs">
+                      {formError}
+                    </div>
+                  )}
+
+                  {/* Subject Title */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 dark:text-slate-300 text-slate-700 mb-1">
+                      Subject / Course Title *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Computer Science 101"
+                      value={formData.title}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-900/80 dark:bg-slate-900/80 bg-slate-100 border border-slate-700 dark:border-slate-700 border-slate-300 text-slate-100 dark:text-slate-100 text-slate-800 focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+
+                  {/* Code & Location + Instructor */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 dark:text-slate-300 text-slate-700 mb-1">
+                        Code / Room
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. CS-101 • Room 204"
+                        value={formData.code}
+                        onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl bg-slate-900/80 dark:bg-slate-900/80 bg-slate-100 border border-slate-700 dark:border-slate-700 border-slate-300 text-slate-100 dark:text-slate-100 text-slate-800 focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 dark:text-slate-300 text-slate-700 mb-1">
+                        Instructor / Teacher
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Dr. Smith"
+                        value={formData.instructor}
+                        onChange={(e) => setFormData({ ...formData, instructor: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl bg-slate-900/80 dark:bg-slate-900/80 bg-slate-100 border border-slate-700 dark:border-slate-700 border-slate-300 text-slate-100 dark:text-slate-100 text-slate-800 focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Day Select */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 dark:text-slate-300 text-slate-700 mb-1">
+                      Day of Week *
+                    </label>
+                    <select
+                      value={formData.day}
+                      onChange={(e) => setFormData({ ...formData, day: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-900/80 dark:bg-slate-900/80 bg-slate-100 border border-slate-700 dark:border-slate-700 border-slate-300 text-slate-100 dark:text-slate-100 text-slate-800 focus:outline-none focus:border-blue-500"
+                    >
+                      {ALL_DAYS.map(day => (
+                        <option key={day} value={day}>{day}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Start & End Times */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 dark:text-slate-300 text-slate-700 mb-1">
+                        Start Time *
+                      </label>
+                      <select
+                        value={formData.startTime}
+                        onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl bg-slate-900/80 dark:bg-slate-900/80 bg-slate-100 border border-slate-700 dark:border-slate-700 border-slate-300 text-slate-100 dark:text-slate-100 text-slate-800 focus:outline-none focus:border-blue-500 font-mono"
+                      >
+                        {Array.from({ length: (END_HOUR - START_HOUR) * 2 }).map((_, idx) => {
+                          const mins = START_HOUR * 60 + idx * 30;
+                          const h = Math.floor(mins / 60);
+                          const m = mins % 60;
+                          const timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                          return (
+                            <option key={timeStr} value={timeStr}>
+                              {formatTimeDisplay(timeStr, use24Hour)}
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 dark:text-slate-300 text-slate-700 mb-1">
+                        End Time *
+                      </label>
+                      <select
+                        value={formData.endTime}
+                        onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl bg-slate-900/80 dark:bg-slate-900/80 bg-slate-100 border border-slate-700 dark:border-slate-700 border-slate-300 text-slate-100 dark:text-slate-100 text-slate-800 focus:outline-none focus:border-blue-500 font-mono"
+                      >
+                        {Array.from({ length: (END_HOUR - START_HOUR) * 2 }).map((_, idx) => {
+                          const mins = START_HOUR * 60 + (idx + 1) * 30;
+                          const h = Math.floor(mins / 60);
+                          const m = mins % 60;
+                          if (h > END_HOUR) return null;
+                          const timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                          return (
+                            <option key={timeStr} value={timeStr}>
+                              {formatTimeDisplay(timeStr, use24Hour)}
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Color Theme Selector */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 dark:text-slate-300 text-slate-700 mb-2">
+                      Color Badge Theme
+                    </label>
+                    <div className="flex items-center space-x-2">
+                      {Object.keys(COLOR_THEMES).map(cKey => (
+                        <button
+                          key={cKey}
+                          type="button"
+                          onClick={() => setFormData({ ...formData, color: cKey })}
+                          className={`w-7 h-7 rounded-full ${COLOR_THEMES[cKey].dot} flex items-center justify-center transition-transform ${formData.color === cKey ? 'ring-2 ring-white scale-110 shadow-lg' : 'opacity-70 hover:opacity-100'}`}
+                        >
+                          {formData.color === cKey && (
+                            <span className="text-white text-xs font-bold">✓</span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Notes */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 dark:text-slate-300 text-slate-700 mb-1">
+                      Notes / Description
+                    </label>
+                    <textarea
+                      rows="2"
+                      placeholder="Add homework, topics, or Zoom links..."
+                      value={formData.notes}
+                      onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-900/80 dark:bg-slate-900/80 bg-slate-100 border border-slate-700 dark:border-slate-700 border-slate-300 text-slate-100 dark:text-slate-100 text-slate-800 focus:outline-none focus:border-blue-500 resize-none text-xs"
+                    ></textarea>
+                  </div>
+
+                  {/* Buttons */}
+                  <div className="flex items-center justify-end space-x-2 pt-2 border-t border-slate-700 dark:border-slate-700 border-slate-200">
+                    <button
+                      type="button"
+                      onClick={() => setIsModalOpen(false)}
+                      className="px-4 py-2 rounded-xl text-slate-400 hover:text-slate-200 text-xs font-medium"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-5 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold text-xs shadow-md shadow-blue-500/20"
+                    >
+                      {editingEvent ? 'Save Changes' : 'Add Class Slot'}
+                    </button>
+                  </div>
+
+                </form>
+
+              </div>
+            </div>
+          )}
+
+          {/* VIEW EVENT DETAIL MODAL */}
+          {detailModalEvent && (
+            <div 
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn"
+              onClick={() => setDetailModalEvent(null)}
+            >
+              <div 
+                className="w-full max-w-sm bg-slate-800 dark:bg-slate-800 bg-white rounded-2xl border border-slate-700 dark:border-slate-700 border-slate-200 shadow-2xl p-6 space-y-4"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-start justify-between">
+                  <div>
+                    <span className={`inline-block px-2.5 py-0.5 text-[10px] font-bold uppercase rounded-full ${COLOR_THEMES[detailModalEvent.color]?.badge || 'bg-blue-500 text-white'}`}>
+                      {detailModalEvent.day}
+                    </span>
+                    <h3 className="text-lg font-bold text-slate-100 dark:text-slate-100 text-slate-800 mt-1">
+                      {detailModalEvent.title}
+                    </h3>
+                  </div>
+                  <button
+                    onClick={() => setDetailModalEvent(null)}
+                    className="text-slate-400 hover:text-slate-200 p-1"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="space-y-2 text-xs text-slate-300 dark:text-slate-300 text-slate-600">
+                  <div className="flex items-center space-x-2">
+                    <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>
+                      {formatTimeDisplay(detailModalEvent.startTime, use24Hour)} - {formatTimeDisplay(detailModalEvent.endTime, use24Hour)}
+                    </span>
+                  </div>
+
+                  {detailModalEvent.code && (
+                    <div className="flex items-center space-x-2">
+                      <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      </svg>
+                      <span>{detailModalEvent.code}</span>
+                    </div>
+                  )}
+
+                  {detailModalEvent.instructor && (
+                    <div className="flex items-center space-x-2">
+                      <svg className="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                      <span>{detailModalEvent.instructor}</span>
+                    </div>
+                  )}
+
+                  {detailModalEvent.notes && (
+                    <div className="mt-3 p-3 rounded-xl bg-slate-900/50 dark:bg-slate-900/50 bg-slate-100 border border-slate-700/50 dark:border-slate-700/50 border-slate-200">
+                      <p className="font-semibold text-[11px] text-slate-400 mb-0.5">Notes:</p>
+                      <p className="italic">{detailModalEvent.notes}</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-end space-x-2 pt-3 border-t border-slate-700 dark:border-slate-700 border-slate-200">
+                  <button
+                    onClick={(e) => handleDeleteEvent(detailModalEvent.id, e)}
+                    className="px-3 py-1.5 rounded-xl bg-rose-500/15 text-rose-400 hover:bg-rose-500/25 text-xs font-medium transition"
+                  >
+                    Delete Slot
+                  </button>
+                  <button
+                    onClick={(e) => openEditModal(detailModalEvent, e)}
+                    className="px-4 py-1.5 rounded-xl bg-blue-600 text-white hover:bg-blue-500 text-xs font-semibold shadow-md transition"
+                  >
+                    Edit Details
+                  </button>
+                </div>
+
+              </div>
+            </div>
+          )}
+
+        </div>
+      );
+    }
+
+    // Render Component to DOM
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<Timetable />);
+  </script>
+</body>
+</html>

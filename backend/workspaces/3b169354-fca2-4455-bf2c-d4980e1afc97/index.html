@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Simple Page</title>
+    <style>
+        /* Modern CSS Reset & Box Sizing */
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        /* CSS Variables for Theme Management */
+        :root {
+            --bg-color: #f8f8f8;
+            --text-color: #333;
+            --heading-color: #007bff;
+            --card-bg-color: #ffffff;
+            --border-color: #e0e0e0;
+            --button-bg: #007bff;
+            --button-text: #ffffff;
+            --button-hover-bg: #0056b3;
+            --box-shadow-color: rgba(0, 0, 0, 0.08);
+        }
+
+        /* Dark Mode Variables */
+        .dark-mode {
+            --bg-color: #1a1a2e;
+            --text-color: #e0e0e0;
+            --heading-color: #8aa8ff; /* A lighter blue for dark mode */
+            --card-bg-color: #2e304a;
+            --border-color: #3f425c;
+            --button-bg: #8aa8ff;
+            --button-text: #1a1a2e;
+            --button-hover-bg: #6b85e0;
+            --box-shadow-color: rgba(0, 0, 0, 0.25);
+        }
+
+        /* Base Body Styles */
+        body {
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Aligns content to the top */
+            min-height: 100vh;
+            line-height: 1.6;
+            font-size: 16px;
+            transition: background-color 0.3s ease, color 0.3s ease; /* Smooth theme transition */
+        }
+
+        /* Container for content */
+        .container {
+            background-color: var(--card-bg-color);
+            border-radius: 10px;
+            box-shadow: 0 4px 15px var(--box-shadow-color);
+            padding: 40px;
+            max-width: 800px;
+            width: 100%;
+            border: 1px solid var(--border-color);
+            transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease; /* Smooth theme transition */
+            position: relative; /* For positioning the toggle button */
+            margin-top: 40px; /* Space from top for the button */
+        }
+
+        /* Heading Styles */
+        h1 {
+            color: var(--heading-color);
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.8em;
+            font-weight: 700;
+            transition: color 0.3s ease; /* Smooth theme transition */
+        }
+
+        /* Paragraph Styles */
+        p {
+            margin-bottom: 20px;
+            font-size: 1.1em;
+            line-height: 1.7;
+        }
+
+        p:last-of-type {
+            margin-bottom: 0;
+        }
+
+        /* Theme Toggle Button */
+        .theme-toggle {
+            position: absolute;
+            top: 20px;
+            right: 25px;
+            background-color: var(--button-bg);
+            color: var(--button-text);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.95em;
+            font-weight: 600;
+            transition: background-color 0.3s ease, color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .theme-toggle:hover {
+            background-color: var(--button-hover-bg);
+            transform: translateY(-1px);
+        }
+
+        .theme-toggle:active {
+            transform: translateY(0);
+        }
+
+        /* Responsive Adjustments */
+        @media (max-width: 768px) {
+            body {
+                padding: 15px;
+            }
+            .container {
+                padding: 30px;
+                margin-top: 20px;
+            }
+            h1 {
+                font-size: 2.2em;
+                margin-bottom: 25px;
+            }
+            p {
+                font-size: 1em;
+            }
+            .theme-toggle {
+                top: 15px;
+                right: 15px;
+                padding: 8px 15px;
+                font-size: 0.9em;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                padding: 25px;
+                margin-top: 15px; /* Adjust top margin for smaller screens */
+            }
+            h1 {
+                font-size: 1.8em;
+                margin-bottom: 20px;
+            }
+            .theme-toggle {
+                position: static; /* Stack button below content on very small screens */
+                display: block;
+                width: 100%;
+                margin: 20px 0 0 0; /* Add margin after button */
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <button id="themeToggle" class="theme-toggle">Toggle Dark Mode</button>
+        <h1>Welcome to My Simple Webpage</h1>
+        <p>This is a very basic webpage created by DAI. It includes a header and a paragraph of text. Enjoy your visit!</p>
+        <p>Feel free to expand upon this foundation.</p>
+    </div>
+
+    <script>
+        const themeToggleBtn = document.getElementById('themeToggle');
+        const body = document.body;
+        const LIGHT_MODE = 'light';
+        const DARK_MODE = 'dark';
+        const THEME_STORAGE_KEY = 'theme';
+
+        // Function to apply the theme based on preference
+        function applyTheme(theme) {
+            if (theme === DARK_MODE) {
+                body.classList.add(DARK_MODE);
+                themeToggleBtn.textContent = 'Toggle Light Mode';
+            } else {
+                body.classList.remove(DARK_MODE);
+                themeToggleBtn.textContent = 'Toggle Dark Mode';
+            }
+        }
+
+        // Initialize theme on page load
+        // 1. Check localStorage for a saved preference
+        let savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+
+        if (savedTheme) {
+            applyTheme(savedTheme);
+        } else {
+            // 2. If no preference saved, check system preference
+            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            applyTheme(prefersDark ? DARK_MODE : LIGHT_MODE);
+        }
+
+        // Add event listener to the toggle button
+        themeToggleBtn.addEventListener('click', () => {
+            const currentTheme = body.classList.contains(DARK_MODE) ? DARK_MODE : LIGHT_MODE;
+            const newTheme = (currentTheme === DARK_MODE) ? LIGHT_MODE : DARK_MODE;
+
+            applyTheme(newTheme);
+            localStorage.setItem(THEME_STORAGE_KEY, newTheme); // Save preference
+        });
+    </script>
+</body>
+</html>

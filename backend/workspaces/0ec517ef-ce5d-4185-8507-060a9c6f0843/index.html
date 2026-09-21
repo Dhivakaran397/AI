@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ConnectTech - Mobile Phones</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Custom scrollbar for dark mode */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1a202c; /* dark-900 */
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4a5568; /* dark-700 */
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #718096; /* dark-600 */
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Hide scrollbar for specific elements if needed, e.g., filter sidebar */
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+        /* Custom styles for active tab */
+        .tab-button.active {
+            border-bottom-color: #8B5CF6; /* vibrant purple */
+            color: #8B5CF6;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 antialiased">
+
+    <div id="app" class="min-h-screen flex flex-col">
+        <!-- Header -->
+        <header class="bg-gray-800 shadow-md p-4 flex justify-between items-center sticky top-0 z-50">
+            <div class="flex items-center">
+                <button id="menuButton" class="lg:hidden p-2 rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500 mr-2">
+                    <i data-lucide="menu" class="w-6 h-6 text-gray-300"></i>
+                </button>
+                <a href="#" class="text-2xl font-bold text-purple-500">ConnectTech</a>
+            </div>
+            <div class="relative w-full max-w-md mx-4 hidden sm:block">
+                <input type="text" placeholder="Search for phones..." class="w-full p-2 pl-10 rounded-md bg-gray-700 text-gray-200 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"></i>
+            </div>
+            <nav class="flex items-center space-x-4">
+                <button class="p-2 rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500 relative">
+                    <i data-lucide="shopping-cart" class="w-6 h-6 text-gray-300"></i>
+                    <span id="cartCount" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-4 w-4 flex items-center justify-center">0</span>
+                </button>
+                <button class="p-2 rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    <i data-lucide="user" class="w-6 h-6 text-gray-300"></i>
+                </button>
+            </nav>
+        </header>
+
+        <!-- Main Content Area -->
+        <main id="mainContent" class="flex-1 flex flex-col lg:flex-row p-4 gap-6">
+
+            <!-- Filter/Sort Sidebar (Hidden on mobile by default) -->
+            <aside id="filterSidebar" class="fixed inset-y-0 left-0 bg-gray-800 w-64 p-6 z-50 transform -translate-x-full lg:translate-x-0 lg:relative lg:inset-0 lg:w-72 lg:flex-shrink-0 lg:flex flex-col overflow-y-auto hide-scrollbar transition-transform duration-300 ease-in-out">
+                <div class="flex justify-between items-center mb-6 lg:hidden">
+                    <h2 class="text-xl font-semibold text-gray-200">Filters</h2>
+                    <button id="closeSidebarButton" class="p-2 rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                        <i data-lucide="x" class="w-6 h-6 text-gray-300"></i>
+                    </button>
+                </div>
+
+                <div class="space-y-8">
+                    <!-- Brand Filter -->
+                    <div>
+                        <h3 class="text-lg font-semibold mb-3 text-gray-200">Brand</h3>
+                        <div class="space-y-2">
+                            <label class="flex items-center text-gray-300">
+                                <input type="checkbox" value="Apple" class="form-checkbox h-4 w-4 text-purple-600 bg-gray-700 border-gray-600 rounded focus:ring-purple-500">
+                                <span class="ml-2">Apple</span>
+                            </label>
+                            <label class="flex items-center text-gray-300">
+                                <input type="checkbox" value="Samsung" class="form-checkbox h-4 w-4 text-purple-600 bg-gray-700 border-gray-600 rounded focus:ring-purple-500">
+                                <span class="ml-2">Samsung</span>
+                            </label>
+                            <label class="flex items-center text-gray-300">
+                                <input type="checkbox" value="Google" class="form-checkbox h-4 w-4 text-purple-600 bg-gray-700 border-gray-600 rounded focus:ring-purple-500">
+                                <span class="ml-2">Google</span>
+                            </label>
+                            <label class="flex items-center text-gray-300">
+                                <input type="checkbox" value="OnePlus" class="form-checkbox h-4 w-4 text-purple-600 bg-gray-700 border-gray-600 rounded focus:ring-purple-500">
+                                <span class="ml-2">OnePlus</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Price Range Filter -->
+                    <div>
+                        <h3 class="text-lg font-semibold mb-3 text-gray-200">Price Range</h3>
+                        <div class="space-y-2">
+                            <label class="flex items-center text-gray-300">
+                                <input type="radio" name="price" value="0-500" class="form-radio h-4 w-4 text-purple-600 bg-gray-700 border-gray-600 focus:ring-purple-500">
+                                <span class="ml-2">Under $500</span>
+                            </label>
+                            <label class="flex items-center text-gray-300">
+                                <input type="radio" name="price" value="500-1000" class="form-radio h-4 w-4 text-purple-600 bg-gray-700 border-gray-600 focus:ring-purple-500">
+                                <span class="ml-2">$500 - $1000</span>
+                            </label>
+                            <label class="flex items-center text-gray-300">
+                                <input type="radio" name="price" value="1000-1500" class="form-radio h-4 w-4 text-purple-600 bg-gray-700 border-gray-600 focus:ring-purple-500">
+                                <span class="ml-2">$1000 - $1500</span>
+                            </label>
+                            <label class="flex items-center text-gray-300">
+                                <input type="radio" name="price" value="1500-max" class="form-radio h-4 w-4 text-purple-600 bg-gray-700 border-gray-600 focus:ring-purple-500">
+                                <span class="ml-2">Over $1500</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Storage Filter -->
+                    <div>
+                        <h3 class="text-lg font-semibold mb-3 text-gray-200">Storage</h3>
+                        <div class="space-y-2">
+                            <label class="flex items-center text-gray-300">
+                                <input type="checkbox" value="128GB" class="form-checkbox h-4 w-4 text-purple-600 bg-gray-700 border-gray-600 rounded focus:ring-purple-500">
+                                <span class="ml-2">128GB</span>
+                            </label>
+                            <label class="flex items-center text-gray-300">
+                                <input type="checkbox" value="256GB" class="form-checkbox h-4 w-4 text-purple-600 bg-gray-700 border-gray-600 rounded focus:ring-purple-500">
+                                <span class="ml-2">256GB</span>
+                            </label>
+                            <label class="flex items-center text-gray-300">
+                                <input type="checkbox" value="512GB" class="form-checkbox h-4 w-4 text-purple-600 bg-gray-700 border-gray-600 rounded focus:ring-purple-500">
+                                <span class="ml-2">512GB</span>
+                            </label>
+                            <label class="flex items-center text-gray-300">
+                                <input type="checkbox" value="1TB" class="form-checkbox h-4 w-4 text-purple-600 bg-gray-700 border-gray-600 rounded focus:ring-purple-500">
+                                <span class="ml-2">1TB</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Color Filter -->
+                    <div>
+                        <h3 class="text-lg font-semibold mb-3 text-gray-200">Color</h3>
+                        <div class="flex flex-wrap gap-2">
+                            <button class="w-8 h-8 rounded-full bg-black border-2 border-gray-600 hover:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500" title="Black"></button>
+                            <button class="w-8 h-8 rounded-full bg-white border-2 border-gray-600 hover:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500" title="White"></button>
+                            <button class="w-8 h-8 rounded-full bg-blue-600 border-2 border-gray-600 hover:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500" title="Blue"></button>
+                            <button class="w-8 h-8 rounded-full bg-green-600 border-2 border-gray-600 hover:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500" title="Green"></button>
+                            <button class="w-8 h-8 rounded-full bg-red-600 border-2 border-gray-600 hover:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500" title="Red"></button>
+                        </div>
+                    </div>
+
+                    <!-- Condition Filter -->
+                    <div>
+                        <h3 class="text-lg font-semibold mb-3 text-gray-200">Condition</h3>
+                        <div class="space-y-2">
+                            <label class="flex items-center text-gray-300">
+                                <input type="radio" name="condition" value="New" class="form-radio h-4 w-4 text-purple-600 bg-gray-700 border-gray-600 focus:ring-purple-500">
+                                <span class="ml-2">New</span>
+                            </label>
+                            <label class="flex items-center text-gray-300">
+                                <input type="radio" name="condition" value="Refurbished" class="form-radio h-4 w-4 text-purple-600 bg-gray-700 border-gray-600 focus:ring-purple-500">
+                                <span class="ml-2">Refurbished</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 5G Compatibility Filter -->
+                    <div>
+                        <h3 class="text-lg font-semibold mb-3 text-gray-200">Connectivity</h3>
+                        <label class="flex items-center text-gray-300">
+                            <input type="checkbox" value="5G" class="form-checkbox h-4 w-4 text-purple-600 bg-gray-700 border-gray-600 rounded focus:ring-purple-500">
+                            <span class="ml-2">5G Compatible</span>
+                        </label>
+                    </div>
+
+                    <button class="w-full py-2 px-4 bg-purple-600 text-white font-semibold rounded-md hover:bg-purple-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500">Apply Filters</button>
+                </div>
+            </aside>
+
+            <!-- Product Listing Page -->
+            <section id="productListingPage" class="flex-1 transition-all duration-300 ease-in-out">
+                <div class="flex justify-between items-center mb-6">
+                    <h1 class="text-3xl font-bold text-gray-100">Mobile Phones</h1>
+                    <div class="flex items-center space-x-4">
+                        <div class="relative">
+                            <select class="block appearance-none w-full bg-gray-700 border border-gray-600 text-gray-200 py-2 px-4 pr-8 rounded-md leading-tight focus:outline-none focus:bg-gray-600 focus:border-purple-500">
+                                <option>Sort by: Featured</option>
+                                <option>Sort by: Price: Low to High</option>
+                                <option>Sort by: Price: High to Low</option>
+                                <option>Sort by: Newest Arrivals</option>
+                                <option>Sort by: Top Rated</option>
+                            </select>
+                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
+                                <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="productList" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    <!-- Product Card Example (will be dynamically generated) -->
+                    <div class="bg-gray-800 rounded-lg shadow-lg overflow-hidden flex flex-col transform hover:scale-105 transition-transform duration-200 cursor-pointer" onclick="showProductDetailPage('iphone-15-pro')">
+                        <div class="relative p-4 flex-shrink-0">
+                            <img src="https://via.placeholder.com/400x300/1F2937/D1D5DB?text=iPhone+15+Pro" alt="iPhone 15 Pro" class="w-full h-48 object-contain rounded-md">
+                            <div class="absolute top-2 right-2 bg-purple-600 text-white text-xs font-bold px-2 py-1 rounded-full">New</div>
+                        </div>
+                        <div class="p-4 flex flex-col flex-grow">
+                            <h3 class="text-lg font-semibold text-gray-100 mb-1">Apple iPhone 15 Pro</h3>
+                            <p class="text-sm text-gray-400 mb-2">6.1" Super Retina XDR, A17 Bionic</p>
+                            <div class="flex items-center mb-3">
+                                <div class="flex text-yellow-400">
+                                    <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                                    <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                                    <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                                    <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                                    <i data-lucide="star-half" class="w-4 h-4 fill-current"></i>
+                                </div>
+                                <span class="text-sm text-gray-400 ml-2">(4.5)</span>
+                            </div>
+                            <p class="text-2xl font-bold text-purple-400 mb-4">$999.00</p>
+                            <button class="mt-auto w-full py-2 px-4 bg-purple-600 text-white font-semibold rounded-md hover:bg-purple-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 flex items-center justify-center">
+                                <i data-lucide="shopping-cart" class="w-5 h-5 mr-2"></i> Add to Cart
+                            </button>
+                        </div>
+                    </div>
+                    <!-- More product cards will be added here -->
+                </div>
+
+                <!-- Pagination -->
+                <div class="flex justify-center mt-8">
+                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                        <a href="#" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-700 bg-gray-800 text-sm font-medium text-gray-400 hover:bg-gray-700">
+                            <span class="sr-only">Previous</span>
+                            <i data-lucide="chevron-left" class="h-5 w-5"></i>
+                        </a>
+                        <a href="#" aria-current="page" class="z-10 bg-purple-600 border-purple-500 text-white relative inline-flex items-center px-4 py-2 text-sm font-medium">1</a>
+                        <a href="#" class="relative inline-flex items-center px-4 py-2 border border-gray-700 bg-gray-800 text-sm font-medium text-gray-400 hover:bg-gray-700">2</a>
+                        <a href="#" class="hidden md:inline-flex relative items-center px-4 py-2 border border-gray-700 bg-gray-800 text-sm font-medium text-gray-400 hover:bg-gray-700">3</a>
+                        <span class="relative inline-flex items-center px-4 py-2 border border-gray-700 bg-gray-800 text-sm font-medium text-gray-400">...</span>
+                        <a href="#" class="relative inline-flex items-center px-4 py-2 border border-gray-700 bg-gray-800 text-sm font-medium text-gray-400 hover:bg-gray-700">10</a>
+                        <a href="#" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-700 bg-gray-800 text-sm font-medium text-gray-400 hover:bg-gray-700">
+                            <span class="sr-only">Next</span>
+                            <i data-lucide="chevron-right" class="h-5 w-5"></i>
+                        </a>
+                    </nav>
+                </div>
+            </section>
+
+            <!-- Product Detail Page (Hidden by default) -->
+            <section id="productDetailPage" class="hidden flex-1 transition-all duration-300 ease-in-out">
+                <button onclick="showProductListingPage()" class="mb-6 flex items-center text-purple-400 hover:text-purple-300 transition-colors duration-200">
+                    <i data-lucide="arrow-left" class="w-5 h-5 mr-2"></i> Back to Products
+                </button>
+
+                <div class="bg-gray-800 rounded-lg shadow-lg p-6 lg:p-8">
+                    <!-- Hero Section -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                        <!-- Image Gallery -->
+                        <div class="flex flex-col items-center">
+                            <div id="mainProductImageContainer" class="relative w-full aspect-square bg-gray-700 rounded-lg overflow-hidden mb-4">
+                                <img id="mainProductImage" src="https://via.placeholder.com/600x600/1F2937/D1D5DB?text=iPhone+15+Pro" alt="iPhone 15 Pro" class="w-full h-full object-contain">
+                                <button class="absolute top-1/2 left-2 -translate-y-1/2 p-2 bg-gray-900 bg-opacity-50 rounded-full text-white hover:bg-opacity-75" onclick="prevImage()">
+                                    <i data-lucide="chevron-left" class="w-6 h-6"></i>
+                                </button>
+                                <button class="absolute top-1/2 right-2 -translate-y-1/2 p-2 bg-gray-900 bg-opacity-50 rounded-full text-white hover:bg-opacity-75" onclick="nextImage()">
+                                    <i data-lucide="chevron-right" class="w-6 h-6"></i>
+                                </button>
+                            </div>
+                            <div id="thumbnailGallery" class="flex space-x-2 overflow-x-auto hide-scrollbar pb-2">
+                                <img src="https://via.placeholder.com/100x100/1F2937/D1D5DB?text=Img1" class="w-20 h-20 object-contain rounded-md border-2 border-purple-500 cursor-pointer" onclick="changeMainImage(this.src)">
+                                <img src="https://via.placeholder.com/100x100/1F2937/D1D5DB?text=Img2" class="w-20 h-20 object-contain rounded-md border-2 border-transparent hover:border-purple-500 cursor-pointer" onclick="changeMainImage(this.src)">
+                                <img src="https://via.placeholder.com/100x100/1F2937/D1D5DB?text=Img3" class="w-20 h-20 object-contain rounded-md border-2 border-transparent hover:border-purple-500 cursor-pointer" onclick="changeMainImage(this.src)">
+                                <img src="https://via.placeholder.com/100x100/1F2937/D1D5DB?text=Img4" class="w-20 h-20 object-contain rounded-md border-2 border-transparent hover:border-purple-500 cursor-pointer" onclick="changeMainImage(this.src)">
+                            </div>
+                        </div>
+
+                        <!-- Product Info -->
+                        <div>
+                            <h2 id="productName" class="text-4xl font-bold text-gray-100 mb-2">Apple iPhone 15 Pro</h2>
+                            <p class="text-gray-400 text-lg mb-4">The ultimate iPhone experience. Featuring the A17 Bionic chip, a customizable Action Button, and a more versatile Pro camera system.</p>
+                            <div class="flex items-center mb-4">
+                                <div class="flex text-yellow-400">
+                                    <i data-lucide="star" class="w-5 h-5 fill-current"></i>
+                                    <i data-lucide="star" class="w-5 h-5 fill-current"></i>
+                                    <i data-lucide="star" class="w-5 h-5 fill-current"></i>
+                                    <i data-lucide="star" class="w-5 h-5 fill-current"></i>
+                                    <i data-lucide="star-half" class="w-5 h-5 fill-current"></i>
+                                </div>
+                                <span class="text-gray-400 ml-2">(4.5 / 128 Reviews)</span>
+                            </div>
+                            <p id="productPrice" class="text-5xl font-extrabold text-purple-400 mb-4">$999.00</p>
+                            <p class="text-green-500 font-semibold mb-6 flex items-center">
+                                <i data-lucide="check-circle" class="w-5 h-5 mr-2"></i> In Stock
+                            </p>
+
+                            <!-- Color Selector -->
+                            <div class="mb-6">
+                                <h3 class="text-xl font-semibold text-gray-200 mb-3">Color: <span id="selectedColor">Natural Titanium</span></h3>
+                                <div class="flex space-x-3">
+                                    <button class="w-10 h-10 rounded-full bg-gray-500 border-2 border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500" title="Natural Titanium" data-color="Natural Titanium" data-price-mod="0" onclick="selectOption(this, 'color')"></button>
+                                    <button class="w-10 h-10 rounded-full bg-black border-2 border-gray-600 hover:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500" title="Black Titanium" data-color="Black Titanium" data-price-mod="0" onclick="selectOption(this, 'color')"></button>
+                                    <button class="w-10 h-10 rounded-full bg-white border-2 border-gray-600 hover:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500" title="White Titanium" data-color="White Titanium" data-price-mod="0" onclick="selectOption(this, 'color')"></button>
+                                    <button class="w-10 h-10 rounded-full bg-blue-800 border-2 border-gray-600 hover:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500" title="Blue Titanium" data-color="Blue Titanium" data-price-mod="0" onclick="selectOption(this, 'color')"></button>
+                                </div>
+                            </div>
+
+                            <!-- Storage Selector -->
+                            <div class="mb-8">
+                                <h3 class="text-xl font-semibold text-gray-200 mb-3">Storage: <span id="selectedStorage">256GB</span></h3>
+                                <div class="flex flex-wrap gap-3">
+                                    <button class="px-5 py-2 rounded-full bg-gray-700 text-gray-200 border-2 border-purple-500 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500" data-storage="128GB" data-price-mod="0" onclick="selectOption(this, 'storage')">128GB</button>
+                                    <button class="px-5 py-2 rounded-full bg-gray-700 text-gray-200 border-2 border-gray-600 hover:border-purple-500 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500" data-storage="256GB" data-price-mod="100" onclick="selectOption(this, 'storage')">256GB (+$100)</button>
+                                    <button class="px-5 py-2 rounded-full bg-gray-700 text-gray-200 border-2 border-gray-600 hover:border-purple-500 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500" data-storage="512GB" data-price-mod="300" onclick="selectOption(this, 'storage')">512GB (+$300)</button>
+                                    <button class="px-5 py-2 rounded-full bg-gray-700 text-gray-200 border-2 border-gray-600 hover:border-purple-500 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500" data-storage="1TB" data-price-mod="500" onclick="selectOption(this, 'storage')">1TB (+$500)</button>
+                                </div>
+                            </div>
+
+                            <div class="flex flex-col sm:flex-row gap-4">
+                                <button class="flex-1 py-3 px-6 bg-purple-600 text-white font-bold rounded-lg hover:bg-purple-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 text-lg">
+                                    <i data-lucide="shopping-cart" class="w-6 h-6 inline-block mr-2"></i> Add to Cart
+                                </button>
+                                <button class="flex-1 py-3 px-6 bg-gray-700 text-purple-400 font-bold rounded-lg border-2 border-purple-600 hover:bg-gray-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 text-lg">
+                                    <i data-lucide="credit-card" class="w-6 h-6 inline-block mr-2"></i> Buy Now
+                                </button>
+                                <button class="py-3 px-6 bg-gray-700 text-gray-300 rounded-lg border-2 border-gray-600 hover:bg-gray-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                    <i data-lucide="scale" class="w-6 h-6"></i>
+                                    <span class="sr-only">Add to Compare</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Key Features -->
+                    <div class="mb-10">
+                        <h3 class="text-2xl font-bold text-gray-100 mb-4">Key Features</h3>
+                        <ul class="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-300">
+                            <li class="flex items-start"><i data-lucide="check" class="w-5 h-5 text-purple-400 mr-2 mt-1 flex-shrink-0"></i> Dynamic Island: A magical new way to interact with iPhone.</li>
+                            <li class="flex items-start"><i data-lucide="check" class="w-5 h-5 text-purple-400 mr-2 mt-1 flex-shrink-0"></i> ProMotion Technology: Adaptive refresh rates up to 120Hz.</li>
+                            <li class="flex items-start"><i data-lucide="check" class="w-5 h-5 text-purple-400 mr-2 mt-1 flex-shrink-0"></i> Ceramic Shield: Tougher than any smartphone glass.</li>
+                            <li class="flex items-start"><i data-lucide="check" class="w-5 h-5 text-purple-400 mr-2 mt-1 flex-shrink-0"></i> A17 Bionic Chip: Blazing-fast performance and graphics.</li>
+                            <li class="flex items-start"><i data-lucide="check" class="w-5 h-5 text-purple-400 mr-2 mt-1 flex-shrink-0"></i> Advanced Camera System: 48MP Main, Ultra Wide, Telephoto.</li>
+                            <li class="flex items-start"><i data-lucide="check" class="w-5 h-5 text-purple-400 mr-2 mt-1 flex-shrink-0"></i> All-day Battery Life: Power through your day and beyond.</li>
+                            <li class="flex items-start"><i data-lucide="check" class="w-5 h-5 text-purple-400 mr-2 mt-1 flex-shrink-0"></i> USB-C Connectivity: Universal charging and data transfer.</li>
+                        </ul>
+                    </div>
+
+                    <!-- Specifications Tabbed Section -->
+                    <div class="mb-10">
+                        <div class="border-b border-gray-700 mb-6">
+                            <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                                <button class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-400 hover:border-gray-300 hover:text-gray-300 active" data-tab="display">Display</button>
+                                <button class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-400 hover:border-gray-300 hover:text-gray-300" data-tab="processor">Processor</button>
+                                <button class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-400 hover:border-gray-300 hover:text-gray-300" data-tab="camera">Camera</button>
+                                <button class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-400 hover:border-gray-300 hover:text-gray-300" data-tab="battery">Battery</button>
+                                <button class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-400 hover:border-gray-300 hover:text-gray-300" data-tab="general">General</button>
+                            </nav>
+                        </div>
+
+                        <div id="specificationsContent">
+                            <!-- Display Tab -->
+                            <div id="display" class="tab-content space-y-3">
+                                <p class="text-gray-300"><span class="font-semibold text-gray-100">Type:</span> Super Retina XDR display with ProMotion</p>
+                                <p class="text-gray-300"><span class="font-semibold text-gray-100">Size:</span> 6.1-inch (diagonal) all-screen OLED display</p>
+                                <p class="text-gray-300"><span class="font-semibold text-gray-100">Resolution:</span> 2556 by 1179 pixels at 460 ppi</p>
+                                <p class="text-gray-300"><span class="font-semibold text-gray-100">Brightness:</span> 1,000 nits max brightness (typical); 1,600 nits peak brightness (HDR); 2,000 nits peak brightness (outdoor)</p>
+                                <p class="text-gray-300"><span class="font-semibold text-gray-100">Features:</span> Dynamic Island, Always-On display, ProMotion technology with adaptive refresh rates up to 120Hz, True Tone, Wide color (P3), Haptic Touch, Fingerprint-resistant oleophobic coating</p>
+                            </div>
+                            <!-- Processor Tab -->
+                            <div id="processor" class="tab-content hidden space-y-3">
+                                <p class="text-gray-300"><span class="font-semibold text-gray-100">Chip:</span> A17 Bionic chip</p>
+                                <p class="text-gray-300"><span class="font-semibold text-gray-100">CPU:</span> 6-core CPU with 2 performance and 4 efficiency cores</p>
+                                <p class="text-gray-300"><span class="font-semibold text-gray-100">GPU:</span> 6-core GPU</p>
+                                <p class="text-gray-300"><span class="font-semibold text-gray-100">Neural Engine:</span> 16-core Neural Engine</p>
+                            </div>
+                            <!-- Camera Tab -->
+                            <div id="camera" class="tab-content hidden space-y-3">
+                                <p class="text-gray-300"><span class="font-semibold text-gray-100">Pro Camera System:</span></p>
+                                <ul class="list-disc list-inside ml-4 text-gray-300">
+                                    <li>48MP Main: 24 mm, ƒ/1.78 aperture, second-generation sensor-shift optical image stabilization, 100% Focus Pixels, support for super-high-resolution photos (24MP and 48MP)</li>
+                                    <li>12MP Ultra Wide: 13 mm, ƒ/2.2 aperture and 120° field of view, 100% Focus Pixels</li>
+                                    <li>12MP 2x Telephoto (enabled by quad-pixel sensor): 48 mm, ƒ/1.78 aperture, second-generation sensor-shift optical image stabilization, 100% Focus Pixels</li>
+                                    <li>12MP 3x Telephoto: 77 mm, ƒ/2.8 aperture, optical image stabilization</li>
+                                </ul>
+                                <p class="text-gray-300"><span class="font-semibold text-gray-100">Front Camera:</span> 12MP TrueDepth camera with autofocus, ƒ/1.9 aperture</p>
+                                <p class="text-gray-300"><span class="font-semibold text-gray-100">Video Recording:</span> 4K video recording at 24 fps, 25 fps, 30 fps, or 60 fps</p>
+                            </div>
+                            <!-- Battery Tab -->
+                            <div id="battery" class="tab-content hidden space-y-3">
+                                <p class="text-gray-300"><span class="font-semibold text-gray-100">Video Playback:</span> Up to 23 hours</p>
+                                <p class="text-gray-300"><span class="font-semibold text-gray-100">Video Playback (streamed):</span> Up to 20 hours</p>
+                                <p class="text-gray-300"><span class="font-semibold text-gray-100">Audio Playback:</span> Up to 75 hours</p>
+                                <p class="text-gray-300"><span class="font-semibold text-gray-100">Charging:</span> Fast-charge capable (up to 50% charge in around 30 minutes with 20W adapter or higher), MagSafe wireless charging up to 15W, Qi wireless charging up to 7.5W</p>
+                            </div>
+                            <!-- General Tab -->
+                            <div id="general" class="tab-content hidden space-y-3">
+                                <p class="text-gray-300"><span class="font-semibold text-gray-100">Dimensions:</span> 146.6 mm (5.77 inches) x 70.6 mm (2.78 inches) x 8.25 mm (0.32 inch)</p>
+                                <p class="text-gray-300"><span class="font-semibold text-gray-100">Weight:</span> 187 grams (6.60 ounces)</p>
+                                <p class="text-gray-300"><span class="font-semibold text-gray-100">Operating System:</span> iOS 17</p>
+                                <p class="text-gray-300"><span class="font-semibold text-gray-100">Water Resistance:</span> IP68 (maximum depth of 6 meters up to 30 minutes)</p>
+                                <p class="text-gray-300"><span class="font-semibold text-gray-100">SIM Card:</span> Dual eSIM (supports two active eSIMs)</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Customer Reviews -->
+                    <div class="mb-10">
+                        <h3 class="text-2xl font-bold text-gray-100 mb-4">Customer Reviews</h3>
+                        <div class="flex items-center mb-6">
+                            <p class="text-5xl font-bold text-gray-100 mr-4">4.5</p>
+                            <div class="flex flex-col">
+                                <div class="flex text-yellow-400 mb-1">
+                                    <i data-lucide="star" class="w-6 h-6 fill-current"></i>
+                                    <i data-lucide="star" class="w-6 h-6 fill-current"></i>
+                                    <i data-lucide="star" class="w-6 h-6 fill-current"></i>
+                                    <i data-lucide="star" class="w-6 h-6 fill-current"></i>
+                                    <i data-lucide="star-half" class="w-6 h-6 fill-current"></i>
+                                </div>
+                                <p class="text-gray-400">Based on 128 reviews</p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-6">
+                            <!-- Review 1 -->
+                            <div class="bg-gray-700 p-4 rounded-lg">
+                                <div class="flex items-center mb-2">
+                                    <div class="flex text-yellow-400">
+                                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                                    </div>
+                                    <p class="text-gray-300 ml-3 font-semibold">Amazing Phone!</p>
+                                </div>
+                                <p class="text-gray-400 text-sm mb-2">By John Doe on October 26, 2023</p>
+                                <p class="text-gray-200">"Absolutely love the iPhone 15 Pro! The camera is incredible, and the new Action Button is surprisingly useful. Battery life is also a significant improvement."</p>
+                                <div class="flex space-x-2 mt-3">
+                                    <img src="https://via.placeholder.com/80x80/1F2937/D1D5DB?text=Review+Pic" alt="Review Photo" class="w-20 h-20 object-cover rounded-md">
+                                </div>
+                            </div>
+                            <!-- Review 2 -->
+                            <div class="bg-gray-700 p-4 rounded-lg">
+                                <div class="flex items-center mb-2">
+                                    <div class="flex text-yellow-400">
+                                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                                        <i data-lucide="star-half" class="w-4 h-4 fill-current"></i>
+                                    </div>
+                                    <p class="text-gray-300 ml-3 font-semibold">Great upgrade</p>
+                                </div>
+                                <p class="text-gray-400 text-sm mb-2">By Jane Smith on November 1, 2023</p>
+                                <p class="text-gray-200">"Coming from an iPhone 12, this is a huge leap. The ProMotion display is so smooth, and the A17 Bionic handles everything with ease. A bit pricey, but worth it for the performance."</p>
+                            </div>
+                        </div>
+                        <button class="mt-6 py-2 px-4 bg-gray-700 text-purple-400 border border-purple-600 rounded-md hover:bg-gray-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                            Read All Reviews
+                        </button>
+                    </div>
+
+                    <!-- Related Products -->
+                    <div>
+                        <h3 class="text-2xl font-bold text-gray-100 mb-4">Customers also viewed</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <!-- Related Product Card 1 -->
+                            <div class="bg-gray-800 rounded-lg shadow-lg overflow-hidden flex flex-col transform hover:scale-105 transition-transform duration-200 cursor-pointer" onclick="showProductDetailPage('samsung-s24-ultra')">
+                                <div class="relative p-4 flex-shrink-0">
+                                    <img src="https://via.placeholder.com/400x300/1F2937/D1D5DB?text=Galaxy+S24+Ultra" alt="Samsung Galaxy S24 Ultra" class="w-full h-40 object-contain rounded-md">
+                                </div>
+                                <div class="p-4 flex flex-col flex-grow">
+                                    <h3 class="text-lg font-semibold text-gray-100 mb-1">Samsung Galaxy S24 Ultra</h3>
+                                    <p class="text-sm text-gray-400 mb-2">6.8" Dynamic AMOLED 2X, Snapdragon 8 Gen 3</p>
+                                    <p class="text-xl font-bold text-purple-400 mt-auto">$1199.00</p>
+                                </div>
+                            </div>
+                            <!-- Related Product Card 2 -->
+                            <div class="bg-gray-800 rounded-lg shadow-lg overflow-hidden flex flex-col transform hover:scale-105 transition-transform duration-200 cursor-pointer" onclick="showProductDetailPage('google-pixel-8-pro')">
+                                <div class="relative p-4 flex-shrink-0">
+                                    <img src="https://via.placeholder.com/400x300/1F2937/D1D5DB?text=Pixel+8+Pro" alt="Google Pixel 8 Pro" class="w-full h-40 object-contain rounded-md">
+                                </div>
+                                <div class="p-4 flex flex-col flex-grow">
+                                    <h3 class="text-lg font-semibold text-gray-100 mb-1">Google Pixel 8 Pro</h3>
+                                    <p class="text-sm text-gray-400 mb-2">6.7" Super Actua, Tensor G3</p>
+                                    <p class="text-xl font-bold text-purple-400 mt-auto">$899.00</p>
+                                </div>
+                            </div>
+                            <!-- Related Product Card 3 -->
+                            <div class="bg-gray-800 rounded-lg shadow-lg overflow-hidden flex flex-col transform hover:scale-105 transition-transform duration-200 cursor-pointer" onclick="showProductDetailPage('oneplus-12')">
+                                <div class="relative p-4 flex-shrink-0">
+                                    <img src="https://via.placeholder.com/400x300/1F2937/D1D5DB?text=OnePlus+12" alt="OnePlus 12" class="w-full h-40 object-contain rounded-md">
+                                </div>
+                                <div class="p-4 flex flex-col flex-grow">
+                                    <h3 class="text-lg font-semibold text-gray-100 mb-1">OnePlus 12</h3>
+                                    <p class="text-sm text-gray-400 mb-2">6.82" Fluid AMOLED, Snapdragon 8 Gen 3</p>
+                                    <p class="text-xl font-bold text-purple-400 mt-auto">$799.00</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- Sticky Bottom Bar (Mobile Only) -->
+        <div id="mobileBottomBar" class="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 p-3 flex justify-around items-center z-50 lg:hidden transition-transform duration-300 ease-in-out transform translate-y-full">
+            <button class="flex flex-col items-center text-gray-300 hover:text-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                <i data-lucide="shopping-cart" class="w-6 h-6"></i>
+                <span class="text-xs mt-1">Cart</span>
+            </button>
+            <button class="flex flex-col items-center text-gray-300 hover:text-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                <i data-lucide="scale" class="w-6 h-6"></i>
+                <span class="text-xs mt-1">Compare</span>
+            </button>
+            <button class="flex-1 mx-4 py-2 px-4 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 text-base">
+                Buy Now
+            </button>
+        </div>
+
+    </div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // --- Global State and Data (Simulated) ---
+        const products = [
+            {
+                id: 'iphone-15-pro',
+                brand: 'Apple',
+                model: 'iPhone 15 Pro',
+                specs: '6.1" Super Retina XDR, A17 Bionic',
+                price: 999.00,
+                rating: 4.5,
+                image: 'https://via.placeholder.com/400x300/1F2937/D1D5DB?text=iPhone+15+Pro',
+                detailImages: [
+                    'https://via.placeholder.com/600x600/1F2937/D1D5DB?text=iPhone+15+Pro+Front',
+                    'https://via.placeholder.com/600x600/1F2937/D1D5DB?text=iPhone+15+Pro+Back',
+                    'https://via.placeholder.com/600x600/1F2937/D1D5DB?text=iPhone+15+Pro+Side',
+                    'https://via.placeholder.com/600x600/1F2937/D1D5DB?text=iPhone+15+Pro+Camera'
+                ],
+                features: [
+                    "Dynamic Island: A magical new way to interact with iPhone.",
+                    "ProMotion Technology: Adaptive refresh rates up to 120Hz.",
+                    "Ceramic Shield: Tougher than any smartphone glass.",
+                    "A17 Bionic Chip: Blazing-fast performance and graphics.",
+                    "Advanced Camera System: 48MP Main, Ultra Wide, Telephoto.",
+                    "All-day Battery Life: Power through your day and beyond.",
+                    "USB-C Connectivity: Universal charging and data transfer."
+                ],
+                specifications: {
+                    display: [
+                        { label: "Type", value: "Super Retina XDR display with ProMotion" },
+                        { label: "Size", value: "6.1-inch (diagonal) all-screen OLED display" },
+                        { label: "Resolution", value: "2556 by 1179 pixels at 460 ppi" },
+                        { label: "Brightness", value: "1,000 nits max brightness (typical); 1,600 nits peak brightness (HDR); 2,000 nits peak brightness (outdoor)" },
+                        { label: "Features", value: "Dynamic Island, Always-On display, ProMotion technology with adaptive refresh rates up to 120Hz, True Tone, Wide color (P3), Haptic Touch, Fingerprint-resistant oleophobic coating" }
+                    ],
+                    processor: [
+                        { label: "Chip", value: "A17 Bionic chip" },
+                        { label: "CPU", value: "6-core CPU with 2 performance and 4 efficiency cores" },
+                        { label: "GPU", value: "6-core GPU" },
+                        { label: "Neural Engine", value: "16-core Neural Engine" }
+                    ],
+                    camera: [
+                        { label: "Pro Camera System", value: "" },
+                        { label: "Main", value: "48MP Main: 24 mm, ƒ/1.78 aperture, second-generation sensor-shift optical image stabilization, 100% Focus Pixels, support for super-high-resolution photos (24MP and 48MP)" },
+                        { label: "Ultra Wide", value: "12MP Ultra Wide: 13 mm, ƒ/2.2 aperture and 120° field of view, 100% Focus Pixels" },
+                        { label: "2x Telephoto", value: "12MP 2x Telephoto (enabled by quad-pixel sensor): 48 mm, ƒ/1.78 aperture, second-generation sensor-shift optical image stabilization, 100% Focus Pixels" },
+                        { label: "3x Telephoto", value: "12MP 3x Telephoto: 77 mm, ƒ/2.8 aperture, optical image stabilization" },
+                        { label: "Front Camera", value: "12MP TrueDepth camera with autofocus, ƒ/1.9 aperture" },
+                        { label: "Video Recording", value: "4K video recording at 24 fps, 25 fps, 30 fps, or 60 fps" }
+                    ],
+                    battery: [
+                        { label: "Video Playback", value: "Up to 23 hours" },
+                        { label: "Video Playback (streamed)", value: "Up to 20 hours" },
+                        { label: "Audio Playback", value: "Up to 75 hours" },
+                        { label: "Charging", value: "Fast-charge capable (up to 50% charge in around 30 minutes with 20W adapter or higher), MagSafe wireless charging up to 15W, Qi wireless charging up to 7.5W" }
+                    ],
+                    general: [
+                        { label: "Dimensions", value: "146.6 mm (5.77 inches) x 70.6 mm (2.78 inches) x 8.25 mm (0.32 inch)" },
+                        { label: "Weight", value: "187 grams (6.60 ounces)" },
+                        { label: "Operating System", value: "iOS 17" },
+                        { label: "Water Resistance", value: "IP68 (maximum depth of 6 meters up to 30 minutes)" },
+                        { label: "SIM Card", value: "Dual eSIM (supports two active eSIMs)" }
+                    ]
+                },
+                colors: [
+                    { name: "Natural Titanium", hex: "rgb(128, 128, 128)", priceMod: 0 },
+                    { name: "Black Titanium", hex: "rgb(0, 0, 0)", priceMod: 0 },
+                    { name: "White Titanium", hex: "rgb(255, 255, 255)", priceMod: 0 },
+                    { name: "Blue Titanium", hex: "rgb(28, 25, 255)", priceMod: 0 }
+                ],
+                storage: [
+                    { capacity: "128GB", priceMod: 0 },
+                    { capacity: "256GB", priceMod: 100 },
+                    { capacity: "512GB", priceMod: 300 },
+                    { capacity: "1TB", priceMod: 500 }
+                ],
+                reviews: [
+                    { rating: 5, title: "Amazing Phone!", author: "John Doe", date: "October 26, 2023", text: "Absolutely love the iPhone 15 Pro! The camera is incredible, and the new Action Button is surprisingly useful. Battery life is also a significant improvement.", images: ["https://via.placeholder.com/80x80/1F2937/D1D5DB?text=Review+Pic"] },
+                    { rating: 4.5, title: "Great upgrade", author: "Jane Smith", date: "November 1, 2023", text: "Coming from an iPhone 12, this is a huge leap. The ProMotion display is so smooth, and the A17 Bionic handles everything with ease. A bit pricey, but worth it for the performance.", images: [] }
+                ]
+            },
+            {
+                id: 'samsung-s24-ultra',
+                brand: 'Samsung',
+                model: 'Galaxy S24 Ultra',
+                specs: '6.8" Dynamic AMOLED 2X, Snapdragon 8 Gen 3',
+                price: 1199.00,
+                rating: 4.8,
+                image: 'https://via.placeholder.com/400x300/1F2937/D1D5DB?text=Galaxy+S24+Ultra',
+                detailImages: [
+                    'https://via.placeholder.com/600x600/1F2937/D1D5DB?text=Galaxy+S24+Ultra+Front',
+                    'https://via.placeholder.com/600x600/1F2937/D1D5DB?text=Galaxy+S24+Ultra+Back',
+                    'https://via.placeholder.com/600x600/1F2937/D1D5DB?text=Galaxy+S24+Ultra+Side'
+                ],
+                features: [
+                    "Galaxy AI: Live Translate, Circle to Search, Note Assist.",
+                    "Titanium Frame: Enhanced durability and premium feel.",
+                    "S Pen Built-in: Write, draw, and navigate with precision.",
+                    "200MP Camera: Incredible detail and zoom capabilities.",
+                    "Snapdragon 8 Gen 3: Unmatched performance for gaming and multitasking.",
+                    "Dynamic AMOLED 2X: Stunning display with adaptive refresh rate."
+                ],
+                specifications: {
+                    display: [
+                        { label: "Type", value: "Dynamic AMOLED 2X" },
+                        { label: "Size", value: "6.8-inch" },
+                        { label: "Resolution", value: "3120 x 1440 (QHD+)" }
+                    ],
+                    processor: [
+                        { label: "Chip", value: "Snapdragon 8 Gen 3 for Galaxy" }
+                    ],
+                    camera: [
+                        { label: "Main", value: "200MP Wide-angle Camera" },
+                        { label: "Ultra Wide", value: "12MP Ultra-Wide Camera" },
+                        { label: "Telephoto 1", value: "10MP Telephoto Camera (3x Optical Zoom)" },
+                        { label: "Telephoto 2", value: "50MP Telephoto Camera (5x Optical Zoom)" }
+                    ],
+                    battery: [
+                        { label: "Capacity", value: "5000 mAh" }
+                    ],
+                    general: [
+                        { label: "OS", value: "Android 14" },
+                        { label: "S Pen", value: "Built-in" }
+                    ]
+                },
+                colors: [
+                    { name: "Titanium Gray", hex: "rgb(100, 100, 100)", priceMod: 0 },
+                    { name: "Titanium Black", hex: "rgb(0, 0, 0)", priceMod: 0 }
+                ],
+                storage: [
+                    { capacity: "256GB", priceMod: 0 },
+                    { capacity: "512GB", priceMod: 200 }
+                ],
+                reviews: []
+            },
+            {
+                id: 'google-pixel-8-pro',
+                brand: 'Google',
+                model: 'Pixel 8 Pro',
+                specs: '6.7" Super Actua, Tensor G3',
+                price: 899.00,
+                rating: 4.6,
+                image: 'https://via.placeholder.com/400x300/1F2937/D1D5DB?text=Pixel+8+Pro',
+                detailImages: [
+                    'https://via.placeholder.com/600x600/1F2937/D1D5DB?text=Pixel+8+Pro+Front',
+                    'https://via.placeholder.com/600x600/1F2937/D1D5DB?text=Pixel+8+Pro+Back'
+                ],
+                features: [
+                    "Google AI: Best Take, Magic Editor, Audio Magic Eraser.",
+                    "Tensor G3: Custom-designed chip for advanced AI.",
+                    "Pro Camera System: Advanced sensors and computational photography.",
+                    "Super Actua Display: Google's brightest display ever.",
+                    "7 Years of Updates: Long-term software and security support."
+                ],
+                specifications: {
+                    display: [
+                        { label: "Type", value: "Super Actua display" },
+                        { label: "Size", value: "6.7-inch" },
+                        { label: "Resolution", value: "1344 x 2992" }
+                    ],
+                    processor: [
+                        { label: "Chip", value: "Google Tensor G3" }
+                    ],
+                    camera: [
+                        { label: "Main", value: "50 MP Octa PD wide camera" },
+                        { label: "Ultrawide", value: "48 MP Quad PD ultrawide camera" },
+                        { label: "Telephoto", value: "48 MP Quad PD telephoto camera (5x optical zoom)" }
+                    ],
+                    battery: [
+                        { label: "Capacity", value: "5050 mAh" }
+                    ],
+                    general: [
+                        { label: "OS", value: "Android 14" }
+                    ]
+                },
+                colors: [
+                    { name: "Obsidian", hex: "rgb(20, 20, 20)", priceMod: 0 },
+                    { name: "Porcelain", hex: "rgb(240, 240, 240)", priceMod: 0 }
+                ],
+                storage: [
+                    { capacity: "128GB", priceMod: 0 },
+                    { capacity: "256GB", priceMod: 100 }
+                ],
+                reviews: []
+            },
+            {
+                id: 'oneplus-12',
+                brand: 'OnePlus',
+                model: 'OnePlus 12',
+                specs: '6.82" Fluid AMOLED, Snapdragon 8 Gen 3',
+                price: 799.00,
+                rating: 4.3,
+                image: 'https://via.placeholder.com/400x300/1F2937/D1D5DB?text=OnePlus+12',
+                detailImages: [
+                    'https://via.placeholder.com/600x600/1F2937/D1D5DB?text=OnePlus+12+Front',
+                    'https://via.placeholder.com/600x600/1F2937/D1D5DB?text=OnePlus+12+Back'
+                ],
+                features: [
+                    "Hasselblad Camera: Co-developed camera system for stunning photos.",
+                    "Snapdragon 8 Gen 3: Flagship performance.",
+                    "100W SUPERVOOC Charging: Full charge in minutes.",
+                    "Fluid AMOLED Display: Smooth visuals and vibrant colors.",
+                    "Aqua Touch: Enhanced touch responsiveness, even with wet hands."
+                ],
+                specifications: {
+                    display: [
+                        { label: "Type", value: "Fluid AMOLED with LTPO" },
+                        { label: "Size", value: "6.82-inch" },
+                        { label: "Resolution", value: "3168 x 1440 (QHD+)" }
+                    ],
+                    processor: [
+                        { label: "Chip", value: "Snapdragon 8 Gen 3" }
+                    ],
+                    camera: [
+                        { label: "Main", value: "50MP Sony LYT-808 OIS Camera" },
+                        { label: "Ultrawide", value: "48MP Ultra-wide Camera" },
+                        { label: "Telephoto", value: "64MP Periscope Telephoto Camera (3x optical zoom)" }
+                    ],
+                    battery: [
+                        { label: "Capacity", value: "5400 mAh" },
+                        { label: "Charging", value: "100W SUPERVOOC, 50W AIRVOOC Wireless" }
+                    ],
+                    general: [
+                        { label: "OS", value: "OxygenOS based on Android 14" }
+                    ]
+                },
+                colors: [
+                    { name: "Flowy Emerald", hex: "rgb(0, 100, 50)", priceMod: 0 },
+                    { name: "Silky Black", hex: "rgb(30, 30, 30)", priceMod: 0 }
+                ],
+                storage: [
+                    { capacity: "256GB", priceMod: 0 },
+                    { capacity: "512GB", priceMod: 100 }
+                ],
+                reviews: []
+            }
+        ];
+
+        let currentProduct = null;
+        let currentImageIndex = 0;
+        let basePrice = 0;
+        let selectedColorPriceMod = 0;
+        let selectedStoragePriceMod = 0;
+
+        // --- DOM Elements ---
+        const productListingPage = document.getElementById('productListingPage');
+        const productDetailPage = document.getElementById('productDetailPage');
+        const productList = document.getElementById('productList');
+        const mainProductImage = document.getElementById('mainProductImage');
+        const thumbnailGallery = document.getElementById('thumbnailGallery');
+        const productName = document.getElementById('product
+</body>
+</html>

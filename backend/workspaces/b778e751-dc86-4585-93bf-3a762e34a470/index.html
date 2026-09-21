@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DAI Swarm - Senior Full-Stack Developer AI</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --background-color-light: #f4f7f6;
+            --text-color-light: #1c2c36;
+            --primary-color-light: #3a7bd5;
+            --secondary-color-light: #00d2ff;
+            --card-background-light: rgba(255, 255, 255, 0.6);
+            --border-color-light: rgba(0, 0, 0, 0.1);
+            --shadow-light: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            --gradient-light: linear-gradient(135deg, var(--primary-color-light) 0%, var(--secondary-color-light) 100%);
+
+            --background-color-dark: #121212;
+            --text-color-dark: #e0e0e0;
+            --primary-color-dark: #8e2de2;
+            --secondary-color-dark: #4a00e0;
+            --card-background-dark: rgba(30, 30, 30, 0.7);
+            --border-color-dark: rgba(255, 255, 255, 0.1);
+            --shadow-dark: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+            --gradient-dark: linear-gradient(135deg, var(--primary-color-dark) 0%, var(--secondary-color-dark) 100%);
+
+            --current-background-color: var(--background-color-light);
+            --current-text-color: var(--text-color-light);
+            --current-primary-color: var(--primary-color-light);
+            --current-secondary-color: var(--secondary-color-light);
+            --current-card-background: var(--card-background-light);
+            --current-border-color: var(--border-color-light);
+            --current-shadow: var(--shadow-light);
+            --current-gradient: var(--gradient-light);
+
+            scroll-behavior: smooth;
+        }
+
+        body.dark-mode {
+            --current-background-color: var(--background-color-dark);
+            --current-text-color: var(--text-color-dark);
+            --current-primary-color: var(--primary-color-dark);
+            --current-secondary-color: var(--secondary-color-dark);
+            --current-card-background: var(--card-background-dark);
+            --current-border-color: var(--border-color-dark);
+            --current-shadow: var(--shadow-dark);
+            --current-gradient: var(--gradient-dark);
+        }
+
+        /* Base styles */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            color: var(--current-text-color);
+            background-color: var(--current-background-color);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        a {
+            color: var(--current-primary-color);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        a:hover {
+            color: var(--current-secondary-color);
+        }
+
+        section {
+            padding: 80px 5%;
+            max-width: 1200px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            color: var(--current-text-color);
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+
+        h2 {
+            font-size: 2.5em;
+            text-align: center;
+            margin-bottom: 60px;
+            position: relative;
+        }
+
+        h2::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            bottom: -10px;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 4px;
+            background: var(--current-gradient);
+            border-radius: 2px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Glassmorphism card base */
+        .glass-card {
+            background: var(--current-card-background);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--current-border-color);
+            box-shadow: var(--current-shadow);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--current-shadow), 0 12px 48px 0 rgba(31, 38, 135, 0.45);
+        }
+
+        /* Header */
+        header {
+            background: var(--current-card-background);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--current-border-color);
+            box-shadow: var(--current-shadow);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            padding: 15px 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-weight: 800;
+            font-size: 1.8em;
+            background: var(--current-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            gap: 30px;
+        }
+
+        nav a {
+            font-weight: 500;
+            font-size: 1.1em;
+            position: relative;
+            padding-bottom: 5px;
+        }
+
+        nav a::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 0;
+            height: 2px;
+            background: var(--current-gradient);
+            transition: width 0.3s ease;
+        }
+
+        nav a:hover::after,
+        nav a.active::after {
+            width: 100%;
+        }
+
+        /* Theme Toggle */
+        .theme-toggle-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .theme-toggle {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .theme-toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";

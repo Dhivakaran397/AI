@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaskFlow REST API & UI Studio</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            950: '#052e16',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .code-font { font-family: 'Fira Code', monospace; }
+        /* Custom scrollbar for terminal/code views */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    </style>
+</head>
+<body class="h-full text-slate-100 flex flex-col overflow-hidden">
+
+    <!-- Top Navigation -->
+    <header class="bg-slate-900 border-b border-slate-800 h-16 flex items-center justify-between px-6 shrink-0 z-20">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-emerald-400 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                <i class="fa-solid fa-server text-white text-lg"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg tracking-tight bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">TaskFlow <span class="text-brand-500 text-xs font-mono uppercase px-2 py-0.5 rounded bg-brand-950 border border-brand-800">REST API v1.0</span></h1>
+                <p class="text-xs text-slate-400">Autonomous Task Tracking Engine</p>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-4">
+            <!-- Mode Switcher -->
+            <div class="bg-slate-950 p-1 rounded-xl border border-slate-800 flex space-x-1">
+                <button onclick="switchTab('dashboard')" id="tab-btn-dashboard" class="px-4 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center space-x-2 bg-brand-600 text-white shadow">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    <span>App Dashboard</span>
+                </button>
+                <button onclick="switchTab('playground')" id="tab-btn-playground" class="px-4 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center space-x-2 text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-terminal"></i>
+                    <span>API Playground</span>
+                </button>
+                <button onclick="switchTab('docs')" id="tab-btn-docs" class="px-4 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center space-x-2 text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-book-open"></i>
+                    <span>API Docs</span>
+                </button>
+            </div>
+
+            <!-- Server Status Indicator -->
+            <div class="hidden sm:flex items-center space-x-2 bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800 text-xs">
+                <span class="relative flex h-2 w-2">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <span class="text-slate-300 font-mono">localhost:8080/api</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 overflow-hidden relative">
+
+        <!-- TAB 1: APP DASHBOARD (Task Tracker UI) -->
+        <div id="tab-dashboard" class="absolute inset-0 flex flex-col bg-slate-950 overflow-y-auto p-6 lg:p-8">
+            <!-- Stats Bar -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-slate-400 font-medium">Total Tasks</p>
+                        <h3 id="stat-total" class="text-2xl font-bold mt-1 text-white">0</h3>
+                    </div>
+                    <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center">
+                        <i class="fa-solid fa-list-check"></i>
+                    </div>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-slate-400 font-medium">Completed</p>
+                        <h3 id="stat-completed" class="text-2xl font-bold mt-1 text-emerald-400">0</h3>
+                    </div>
+                    <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+                        <i class="fa-solid fa-circle-check"></i>
+                    </div>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-slate-400 font-medium">In Progress</p>
+                        <h3 id="stat-progress" class="text-2xl font-bold mt-1 text-amber-400">0</h3>
+                    </div>
+                    <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center">
+                        <i class="fa-solid fa-clock-rotate-left"></i>
+                    </div>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-slate-400 font-medium">High Priority</p>
+                        <h3 id="stat-high" class="text-2xl font-bold mt-1 text-rose-400">0</h3>
+                    </div>
+                    <div class="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-400 flex items-center justify-center">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Toolbar & Controls -->
+            <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="flex flex-wrap items-center gap-3 flex-1">
+                    <!-- Search -->
+                    <div class="relative flex-1 min-w-[200px]">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                            <i class="fa-solid fa-search"></i>
+                        </span>
+                        <input type="text" id="search-input" oninput="renderTasks()" placeholder="Search tasks by title or tag..." class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-sm text-slate-200 focus:outline-none focus:border-brand-500 transition-colors">
+                    </div>
+
+                    <!-- Status Filter -->
+                    <select id="filter-status" onchange="renderTasks()" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-brand-500">
+                        <option value="all">All Statuses</option>
+                        <option value="todo">To Do</option>
+                        <option value="in-progress">In Progress</option>
+                        <option value="completed">Completed</option>
+                    </select>
+
+                    <!-- Priority Filter -->
+                    <select id="filter-priority" onchange="renderTasks()" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-brand-500">
+                        <option value="all">All Priorities</option>
+                        <option value="high">High</option>
+                        <option value="medium">Medium</option>
+                        <option value="low">Low</option>
+                    </select>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex items-center space-x-3">
+                    <button onclick="openModal()" class="bg-brand-600 hover:bg-brand-500 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all shadow-lg shadow-brand-600/20 flex items-center space-x-2">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>New Task</span>
+                    </button>
+                    <button onclick="resetSeedData()" title="Reset to Initial Data" class="bg-slate-800 hover:bg-slate-700 text-slate-300 p-2.5 rounded-xl text-sm transition-all">
+                        <i class="fa-solid fa-rotate"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Task List Container -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl flex-1 flex flex-col overflow-hidden shadow-xl">
+                <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+                    <h2 class="font-semibold text-sm text-slate-300">Task Repository</h2>
+                    <span id="task-count-badge" class="text-xs bg-slate-800 text-slate-400 px-2.5 py-0.5 rounded-full font-mono">0 items</span>
+                </div>
+                <div id="task-list" class="divide-y divide-slate-800 overflow-y-auto flex-1">
+                    <!-- Dynamic Items -->
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: API PLAYGROUND -->
+        <div id="tab-playground" class="absolute inset-0 flex flex-col bg-slate-950 hidden overflow-hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-12 flex-1 overflow-hidden">
+                <!-- Endpoint Sidebar -->
+                <div class="lg:col-span-4 bg-slate-900 border-r border-slate-800 p-6 flex flex-col overflow-y-auto">
+                    <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4">REST Endpoints</h2>
+                    
+                    <div class="space-y-3">
+                        <!-- GET /tasks -->
+                        <div onclick="selectEndpoint('GET', '/tasks', null)" id="ep-get-tasks" class="endpoint-card bg-slate-950 border border-brand-500/50 p-3.5 rounded-xl cursor-pointer transition-all hover:border-brand-500">
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 text-xs font-mono font-bold">GET</span>
+                                <span class="text-xs text-slate-400 font-mono">/api/tasks</span>
+                            </div>
+                            <p class="text-xs text-slate-400">Retrieve all tasks with optional filters.</p>
+                        </div>
+
+                        <!-- POST /tasks -->
+                        <div onclick="selectEndpoint('POST', '/tasks', { title: 'New API Task', description: 'Created via REST console', priority: 'high', status: 'todo', tags: ['api'] })" id="ep-post-tasks" class="endpoint-card bg-slate-950 border border-slate-800 p-3.5 rounded-xl cursor-pointer transition-all hover:border-slate-700">
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 text-xs font-mono font-bold">POST</span>
+                                <span class="text-xs text-slate-400 font-mono">/api/tasks</span>
+                            </div>
+                            <p class="text-xs text-slate-400">Create a new task resource.</p>
+                        </div>
+
+                        <!-- GET /tasks/:id -->
+                        <div onclick="selectEndpoint('GET', '/tasks/1', null)" id="ep-get-task-id" class="endpoint-card bg-slate-950 border border-slate-800 p-3.5 rounded-xl cursor-pointer transition-all hover:border-slate-700">
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 text-xs font-mono font-bold">GET</span>
+                                <span class="text-xs text-slate-400 font-mono">/api/tasks/:id</span>
+                            </div>
+                            <p class="text-xs text-slate-400">Fetch a single task by unique ID.</p>
+                        </div>
+
+                        <!-- PUT /tasks/:id -->
+                        <div onclick="selectEndpoint('PUT', '/tasks/1', { title: 'Updated Task via API', status: 'completed' })" id="ep-put-task" class="endpoint-card bg-slate-950 border border-slate-800 p-3.5 rounded-xl cursor-pointer transition-all hover:border-slate-700">
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 text-xs font-mono font-bold">PUT</span>
+                                <span class="text-xs text-slate-400 font-mono">/api/tasks/:id</span>
+                            </div>
+                            <p class="text-xs text-slate-400">Full or partial update of an existing task.</p>
+                        </div>
+
+                        <!-- DELETE /tasks/:id -->
+                        <div onclick="selectEndpoint('DELETE', '/tasks/1', null)" id="ep-delete-task" class="endpoint-card bg-slate-950 border border-slate-800 p-3.5 rounded-xl cursor-pointer transition-all hover:border-slate-700">
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="px-2 py-0.5 rounded bg-rose-500/10 text-rose-400 text-xs font-mono font-bold">DELETE</span>
+                                <span class="text-xs text-slate-400 font-mono">/api/tasks/:id</span>
+                            </div>
+                            <p class="text-xs text-slate-400">Remove a task from the system.</p>
+                        </div>
+                    </div>
+
+                    <!-- Curl generator box -->
+                    <div class="mt-6 pt-6 border-t border-slate-800">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">cURL Command</h3>
+                        <div id="curl-preview" class="bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs code-font text-slate-300 overflow-x-auto whitespace-pre-wrap">
+                            curl -X GET http://localhost:8080/api/tasks
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Request / Response Console -->
+                <div class="lg:col-span-8 flex flex-col bg-slate-950 overflow-hidden">
+                    <!-- Request Bar -->
+                    <div class="p-4 bg-slate-900 border-b border-slate-800 flex items-center space-x-3">
+                        <span id="req-method-badge" class="px-2.5 py-1 rounded bg-blue-500/20 text-blue-400 text-xs font-mono font-bold">GET</span>
+                        <div class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 flex items-center space-x-2">
+                            <span class="text-slate-500 text-xs font-mono">http://localhost:8080/api</span>
+                            <input type="text" id="req-path" value="/tasks" class="bg-transparent text-xs code-font text-slate-200 focus:outline-none flex-1">
+                        </div>
+                        <button onclick="executeApiRequest()" class="bg-brand-600 hover:bg-brand-500 text-white px-5 py-1.5 rounded-xl text-xs font-medium transition-all shadow flex items-center space-x-2">
+                            <i class="fa-solid fa-play"></i>
+                            <span>Send Request</span>
+                        </button>
+                    </div>
+
+                    <!-- Request Body Editor (if applicable) -->
+                    <div id="req-body-container" class="border-b border-slate-800 bg-slate-900/50 p-4 hidden">
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="text-xs font-medium text-slate-300">Request Body (JSON)</label>
+                            <span class="text-xs text-slate-500">Content-Type: application/json</span>
+                        </div>
+                        <textarea id="req-body" rows="5" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs code-font text-slate-200 focus:outline-none focus:border-brand-500"></textarea>
+                    </div>
+
+                    <!-- Response Viewer -->
+                    <div class="flex-1 flex flex-col p-6 overflow-hidden">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center space-x-3">
+                                <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Response</span>
+                                <div id="res-status-badge" class="hidden px-2 py-0.5 rounded text-xs font-mono font-bold"></div>
+                                <span id="res-time" class="text-xs text-slate-500 font-mono"></span>
+                            </div>
+                            <button onclick="copyResponse()" class="text-xs text-slate-400 hover:text-white flex items-center space-x-1.5 bg-slate-900 px-2.5 py-1 rounded-lg border border-slate-800">
+                                <i class="fa-regular fa-copy"></i>
+                                <span>Copy JSON</span>
+                            </button>
+                        </div>
+                        <div class="flex-1 bg-slate-900 border border-slate-800 rounded-2xl p-4 overflow-auto shadow-inner">
+                            <pre id="res-output" class="text-xs code-font text-slate-300 whitespace-pre-wrap">Select an endpoint and click "Send Request" to test the REST API.</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: API DOCS -->
+        <div id="tab-docs" class="absolute inset-0 bg-slate-950 hidden overflow-y-auto p-6 lg:p-12">
+            <div class="max-w-4xl mx-auto space-y-8">
+                <div>
+                    <h2 class="text-2xl font-bold text-white mb-2">TaskFlow REST API Documentation</h2>
+                    <p class="text-sm text-slate-400">Complete reference guide for interacting with the TaskFlow task tracking backend engine.</p>
+                </div>
+
+                <!-- Authentication -->
+                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-3">
+                    <h3 class="text-base font-semibold text-white flex items-center space-x-2">
+                        <i class="fa-solid fa-key text-brand-500"></i>
+                        <span>Base URL & Authentication</span>
+                    </h3>
+                    <p class="text-sm text-slate-300">All API requests should be made to the local simulation base URL:</p>
+                    <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl text-xs code-font text-brand-400">
+                        http://localhost:8080/api
+                    </div>
+                    <p class="text-sm text-slate-300">No authentication header is required for this local environment instance.</p>
+                </div>
+
+                <!-- Endpoints Reference -->
+                <div class="space-y-6">
+                    <h3 class="text-lg font-bold text-white">Endpoints</h3>
+
+                    <!-- Doc 1 -->
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+                        <div class="bg-slate-900/80 px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                                <span class="px-2.5 py-1 rounded bg-blue-500/20 text-blue-400 text-xs font-mono font-bold">GET</span>
+                                <span class="text-sm font-mono font-semibold text-white">/tasks</span>
+                            </div>
+                            <span class="text-xs text-slate-400">List all tasks</span>
+                        </div>
+                        <div class="p-6 space-y-4">
+                            <p class="text-sm text-slate-300">Returns a JSON array of all task objects matching optional query parameters.</p>
+                            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">Query Parameters</h4>
+                            <div class="bg-slate-950 rounded-xl p-4 border border-slate-800 text-xs space-y-2">
+                                <div class="grid grid-cols-3 gap-2"><span class="font-mono text-brand-400">status</span><span class="text-slate-400">string</span><span class="text-slate-300">Filter by status (todo, in-progress, completed)</span></div>
+                                <div class="grid grid-cols-3 gap-2"><span class="font-mono text-brand-400">priority</span><span class="text-slate-400">string</span><span class="text-slate-300">Filter by priority (low, medium, high)</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Doc 2 -->
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+                        <div class="bg-slate-900/80 px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                                <span class="px-2.5 py-1 rounded bg-emerald-500/20 text-emerald-400 text-xs font-mono font-bold">POST</span>
+                                <span class="text-sm font-mono font-semibold text-white">/tasks</span>
+                            </div>
+                            <span class="text-xs text-slate-400">Create task</span>
+                        </div>
+                        <div class="p-6 space-y-4">
+                            <p class="text-sm text-slate-300">Creates a new task in the database and returns the created object with generated ID.</p>
+                            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">JSON Body Schema</h4>
+                            <pre class="bg-slate-950 p-4 rounded-xl border border-slate-800 text-xs code-font text-slate-300">{
+  "title": "String (Required)",
+  "description": "String (Optional)",
+  "priority": "low | medium | high (Default: medium)",
+  "status": "todo | in-progress | completed (Default: todo)",
+  "tags": ["Array", "of", "strings"]
+}</pre>
+                        </div>
+                    </div>
+
+                    <!-- Doc 3 -->
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+                        <div class="bg-slate-900/80 px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                                <span class="px-2.5 py-1 rounded bg-amber-500/20 text-amber-400 text-xs font-mono font-bold">PUT</span>
+                                <span class="text-sm font-mono font-semibold text-white">/tasks/:id</span>
+                            </div>
+                            <span class="text-xs text-slate-400">Update task</span>
+                        </div>
+                        <div class="p-6 space-y-4">
+                            <p class="text-sm text-slate-300">Updates any field of an existing task by ID.</p>
+                        </div>
+                    </div>
+
+                    <!-- Doc 4 -->
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+                        <div class="bg-slate-900/80 px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                                <span class="px-2.5 py-1 rounded bg-rose-500/20 text-rose-400 text-xs font-mono font-bold">DELETE</span>
+                                <span class="text-sm font-mono font-semibold text-white">/tasks/:id</span>
+                            </div>
+                            <span class="text-xs text-slate-400">Delete task</span>
+                        </div>
+                        <div class="p-6 space-y-4">
+                            <p class="text-sm text-slate-300">Deletes the task specified by ID from the datastore.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Modal for Create / Edit Task -->
+    <div id="task-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
+            <div class="px-6 py-5 border-b border-slate-800 flex items-center justify-between">
+                <h3 id="modal-title" class="font-bold text-base text-white">Create New Task</h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <form id="task-form" onsubmit="handleFormSubmit(event)" class="p-6 space-y-4">
+                <input type="hidden" id="form-task-id">
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Task Title *</label>
+                    <input type="text" id="form-title" required placeholder="e.g. Implement OAuth2 authentication" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-brand-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Description</label>
+                    <textarea id="form-description" rows="3" placeholder="Add details about this task..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-brand-500"></textarea>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Priority</label>
+                        <select id="form-priority" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-brand-500">
+                            <option value="low">Low</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="high">High</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Status</label>
+                        <select id="form-status" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-brand-500">
+                            <option value="todo" selected>To Do</option>
+                            <option value="in-progress">In Progress</option>
+                            <option value="completed">Completed</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Tags (comma-separated)</label>
+                    <input type="text" id="form-tags" placeholder="backend, auth, security" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-brand-500">
+                </div>
+                <div class="pt-4 flex items-center justify-end space-x-3">
+                    <button type="button" onclick="closeModal()" class="px-5 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white bg-slate-800 transition-all">Cancel</button>
+                    <button type="submit" class="px-6 py-2.5 rounded-xl text-sm font-medium text-white bg-brand-600 hover:bg-brand-500 transition-all shadow-lg shadow-brand-600/20">Save Task</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-slate-900 border border-slate-800 px-4 py-3 rounded-2xl shadow-2xl flex items-center space-x-3">
+        <div id="toast-icon" class="w-8 h-8 rounded-xl flex items-center justify-center text-sm"></div>
+        <div>
+            <h4 id="toast-title" class="text-xs font-bold text-white">Notification</h4>
+            <p id="toast-desc" class="text-xs text-slate-400"></p>
+        </div>
+    </div>
+
+    <!-- JavaScript Application Logic & REST Simulator -->
+    <script>
+        // Initial Mock Database Seed
+        const INITIAL_TASKS = [
+            {
+                id: 1,
+                title: "Setup REST API routing & middleware",
+                description: "Configure Express.js router with JSON body parser and request logger.",
+                status: "completed",
+                priority: "high",
+                tags: ["backend", "api"],
+                createdAt: new Date(Date.now() - 86400000 * 3).toISOString()
+            },
+            {
+                id: 2,
+                title: "Design PostgreSQL database schema",
+                description: "Create migrations for users, tasks, and category tables with foreign keys.",
+                status: "in-progress",
+                priority: "high",
+                tags: ["database", "sql"],
+                createdAt: new Date(Date.now() - 86400000 * 2).toISOString()
+            },
+            {
+                id: 3,
+                title: "Implement JWT Authentication endpoint",
+                description: "Add signin and signup routes with password hashing (bcrypt) and token validation.",
+                status: "todo",
+                priority: "medium",
+                tags: ["security", "auth"],
+                createdAt: new Date(Date.now() - 86400000 * 1).toISOString()
+            },
+            {
+                id: 4,
+                title: "Write unit tests for task controllers",
+                description: "Achieve at least 80% code coverage using Jest and Supertest.",
+                status: "todo",
+                priority: "low",
+                tags: ["testing", "qa"],
+                createdAt: new Date().toISOString()
+            }
+        ];
+
+        // In-Memory Database Simulation
+        let tasks = JSON.parse(localStorage.getItem('taskflow_tasks')) || INITIAL_TASKS;
+
+        function saveToStorage() {
+            localStorage.setItem('taskflow_tasks', JSON.stringify(tasks));
+        }
+
+        function resetSeedData() {
+            tasks = JSON.parse(JSON.stringify(INITIAL_TASKS));
+            saveToStorage();
+            renderTasks();
+            showToast('System Reset', 'Database restored to initial seed tasks.', 'success');
+        }
+
+        // --- REST API SIMULATOR ENGINE ---
+        // Simulates a true HTTP REST backend with status codes, headers, and latency.
+        function simulateApi(method, path, body = null) {
+            return new Promise((resolve) => {
+                setTimeout(() => {
+                    const urlParts = path.split('/').filter(Boolean);
+                    // urlParts e.g. ['tasks'] or ['tasks', '1']
+                    
+                    let responseStatus = 200;
+                    let responseData = null;
+
+                    // Match routes
+                    if (urlParts[0] === 'tasks') {
+                        if (urlParts.length === 1) {
+                            if (method === 'GET') {
+                                // Support query parameters in simulation if passed
+                                responseData = [...tasks];
+                            } else if (method === 'POST') {
+                                if (!body || !body.title) {
+                                    responseStatus = 400;
+                                    responseData = { error: 'Validation Error', message: 'Task title is required.' };
+                                } else {
+                                    responseStatus = 201;
+                                    const newTask = {
+                                        id: tasks.length > 0 ? Math.max(...tasks.map(t => t.id)) + 1 : 1,
+                                        title: body.title,
+                                        description: body.description || '',
+                                        status: body.status || 'todo',
+                                        priority: body.priority || 'medium',
+                                        tags: Array.isArray(body.tags) ? body.tags : (typeof body.tags === 'string' ? body.tags.split(',').map(t => t.trim()).filter(Boolean) : []),
+                                        createdAt: new Date().toISOString()
+                                    };
+                                    tasks.push(newTask);
+                                    saveToStorage();
+                                    renderTasks();
+                                    responseData = newTask;
+                                }
+                            }
+                        } else if (urlParts.length === 2) {
+                            const taskId = parseInt(urlParts[1]);
+                            const taskIndex = tasks.findIndex(t => t.id === taskId);
+
+                            if (taskIndex === -1) {
+                                responseStatus = 404;
+                                responseData = { error: 'Not Found', message: `Task with ID ${taskId} not found.` };
+                            } else {
+                                if (method === 'GET') {
+                                    responseStatus = 200;
+                                    responseData = tasks[taskIndex];
+                                } else if (method === 'PUT' || method === 'PATCH') {
+                                    responseStatus = 200;
+                                    const existing = tasks[taskIndex];
+                                    const updated = {
+                                        ...existing,
+                                        title: body.title !== undefined ? body.title : existing.title,
+                                        description: body.description !== undefined ? body.description : existing.description,
+                                        status: body.status !== undefined ? body.status : existing.status,
+                                        priority: body.priority !== undefined ? body.priority : existing.priority,
+                                        tags: body.tags !== undefined ? (Array.isArray(body.tags) ? body.tags : body.tags.split(',').map(t => t.trim()).filter(Boolean)) : existing.tags
+                                    };
+                                    tasks[taskIndex] = updated;
+                                    saveToStorage();
+                                    renderTasks();
+                                    responseData = updated;
+                                } else if (method === 'DELETE') {
+                                    responseStatus = 200;
+                                    const deleted = tasks.splice(taskIndex, 1)[0];
+                                    saveToStorage();
+                                    renderTasks();
+                                    responseData = { message: `Task ${taskId} successfully deleted.`, deleted };
+                                }
+                            }
+                        }
+                    } else {
+                        responseStatus = 404;
+                        responseData = { error: 'Not Found', message: 'Endpoint not found.' };
+                    }
+
+                    resolve({
+                        status: responseStatus,
+                        time: Math.floor(Math.random() * 15) + 8 + 'ms',
+                        data: responseData
+                    });
+                }, 200); // 200ms network latency simulation
+            });
+        }
+
+        // --- UI NAVIGATION TABS ---
+        function switchTab(tabId) {
+            ['dashboard', 'playground', 'docs'].forEach(id => {
+                document.getElementById(`tab-${id}`).classList.add('hidden');
+                document.getElementById(`tab-btn-${id}`).className = "px-4 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center space-x-2 text-slate-400 hover:text-white";
+            });
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            document.getElementById(`tab-btn-${tabId}`).className = "px-4 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center space-x-2 bg-brand-600 text-white shadow";
+            
+            if (tabId === 'dashboard') {
+                renderTasks();
+            }
+        }
+
+        // --- DASHBOARD RENDER & ACTIONS ---
+        function renderTasks() {
+            const searchQuery = document.getElementById('search-input').value.toLowerCase();
+            const statusFilter = document.getElementById('filter-status').value;
+            const priorityFilter = document.getElementById('filter-priority').value;
+
+            const filtered = tasks.filter(t => {
+                const matchesSearch = t.title.toLowerCase().includes(searchQuery) || (t.description && t.description.toLowerCase().includes(searchQuery)) || (t.tags && t.tags.some(tag => tag.toLowerCase().includes(searchQuery)));
+                const matchesStatus = statusFilter === 'all' || t.status === statusFilter;
+                const matchesPriority = priorityFilter === 'all' || t.priority === priorityFilter;
+                return matchesSearch && matchesStatus && matchesPriority;
+            });
+
+            // Update stats
+            document.getElementById('stat-total').textContent = tasks.length;
+            document.getElementById('stat-completed').textContent = tasks.filter(t => t.status === 'completed').length;
+            document.getElementById('stat-progress').textContent = tasks.filter(t => t.status === 'in-progress').length;
+            document.getElementById('stat-high').textContent = tasks.filter(t => t.priority === 'high').length;
+            document.getElementById('task-count-badge').textContent = `${filtered.length} items`;
+
+            const container = document.getElementById('task-list');
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="py-16 text-center">
+                        <div class="w-12 h-12 rounded-2xl bg-slate-800 text-slate-400 flex items-center justify-center mx-auto mb-3">
+                            <i class="fa-solid fa-folder-open text-lg"></i>
+                        </div>
+                        <h3 class="text-sm font-semibold text-slate-300">No tasks found</h3>
+                        <p class="text-xs text-slate-500 mt-1">Try adjusting your filters or search query.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = filtered.map(t => {
+                const statusColors = {
+                    'todo': 'bg-slate-800 text-slate-300 border-slate-700',
+                    'in-progress': 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+                    'completed': 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                };
+                const priorityColors = {
+                    'low': 'text-slate-400 bg-slate-800',
+                    'medium': 'text-blue-400 bg-blue-500/10',
+                    'high': 'text-rose-400 bg-rose-500/10'
+                };
+
+                return `
+                    <div class="p-4 hover:bg-slate-850/50 transition-all flex items-start justify-between gap-4 group">
+                        <div class="flex items-start space-x-3.5 flex-1 min-w-0">
+                            <button onclick="toggleTaskStatus(${t.id})" class="mt-1 w-5 h-5 rounded-lg border border-slate-700 flex items-center justify-center transition-colors ${t.status === 'completed' ? 'bg-emerald-500 border-emerald-500 text-white' : 'hover:border-slate-500'}">
+                                ${t.status === 'completed' ? '<i class="fa-solid fa-check text-xs"></i>' : ''}
+                            </button>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center space-x-2 flex-wrap gap-y-1">
+                                    <h3 class="font-medium text-sm text-slate-200 ${t.status === 'completed' ? 'line-through text-slate-500' : ''}">${escapeHtml(t.title)}</h3>
+                                    <span class="px-2 py-0.5 rounded text-[10px] font-medium border uppercase ${statusColors[t.status]}">${t.status}</span>
+                                    <span class="px-2 py-0.5 rounded text-[10px] font-medium uppercase ${priorityColors[t.priority]}">${t.priority}</span>
+                                </div>
+                                ${t.description ? `<p class="text-xs text-slate-400 mt-1 line-clamp-1">${escapeHtml(t.description)}</p>` : ''}
+                                ${t.tags && t.tags.length > 0 ? `
+                                    <div class="flex items-center space-x-1.5 mt-2">
+                                        ${t.tags.map(tag => `<span class="text-[10px] font-mono bg-slate-800 text-slate-400 px-2 py-0.5 rounded">#${escapeHtml(tag)}</span>`).join('')}
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onclick="openModal(${t.id})" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-colors">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                            <button onclick="deleteTask(${t.id})" class="p-2 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs transition-colors">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function toggleTaskStatus(id) {
+            const task = tasks.find(t => t.id === id);
+            if (!task) return;
+            const newStatus = task.status === 'completed' ? 'todo' : 'completed';
+            await simulateApi('PUT', `/tasks/${id}`, { status: newStatus });
+            showToast('Task Updated', `Task status changed to ${newStatus}`, 'success');
+        }
+
+        async function deleteTask(id) {
+            await simulateApi('DELETE', `/tasks/${id}`);
+            showToast('Task Deleted', 'Task removed from database', 'info');
+        }
+
+        // --- MODAL CONTROLS ---
+        function openModal(id = null) {
+            const modal = document.getElementById('task-modal');
+            const titleEl = document.getElementById('modal-title');
+            document.getElementById('form-task-id').value = '';
+            document.getElementById('form-title').value = '';
+            document.getElementById('form-description').value = '';
+            document.getElementById('form-priority').value = 'medium';
+            document.getElementById('form-status').value = 'todo';
+            document.getElementById('form-tags').value = '';
+
+            if (id) {
+                titleEl.textContent = 'Edit Task';
+                const task = tasks.find(t => t.id === id);
+                if (task) {
+                    document.getElementById('form-task-id').value = task.id;
+                    document.getElementById('form-title').value = task.title;
+                    document.getElementById('form-description').value = task.description || '';
+                    document.getElementById('form-priority').value = task.priority;
+                    document.getElementById('form-status').value = task.status;
+                    document.getElementById('form-tags').value = task.tags ? task.tags.join(', ') : '';
+                }
+            } else {
+                titleEl.textContent = 'Create New Task';
+            }
+            modal.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('task-modal').classList.add('hidden');
+        }
+
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+            const id = document.getElementById('form-task-id').value;
+            const payload = {
+                title: document.getElementById('form-title').value,
+                description: document.getElementById('form-description').value,
+                priority: document.getElementById('form-priority').value,
+                status: document.getElementById('form-status').value,
+                tags: document.getElementById('form-tags').value
+            };
+
+            if (id) {
+                await simulateApi('PUT', `/tasks/${id}`, payload);
+                showToast('Success', 'Task updated successfully', 'success');
+            } else {
+                await simulateApi('POST', '/tasks', payload);
+                showToast('Success', 'New task created successfully', 'success');
+            }
+            closeModal();
+        }
+
+        // --- PLAYGROUND CONTROLS ---
+        let currentSelectedMethod = 'GET';
+
+        function selectEndpoint(method, path, bodyObj) {
+            currentSelectedMethod = method;
+            document.querySelectorAll('.endpoint-card').forEach(el => {
+                el.className = "endpoint-card bg-slate-950 border border-slate-800 p-3.5 rounded-xl cursor-pointer transition-all hover:border-slate-700";
+            });
+            event.currentTarget.className = "endpoint-card bg-slate-950 border border-brand-500/50 p-3.5 rounded-xl cursor-pointer transition-all hover:border-brand-500";
+
+            document.getElementById('req-method-badge').textContent = method;
+            document.getElementById('req-method-badge').className = `px-2.5 py-1 rounded text-xs font-mono font-bold ${method === 'GET' ? 'bg-blue-500/20 text-blue-400' : method === 'POST' ? 'bg-emerald-500/20 text-emerald-400' : method === 'PUT' ? 'bg-amber-500/20 text-amber-400' : 'bg-rose-500/20 text-rose-400'}`;
+            document.getElementById('req-path').value = path;
+
+            const bodyContainer = document.getElementById('req-body-container');
+            if (bodyObj) {
+                bodyContainer.classList.remove('hidden');
+                document.getElementById('req-body').value = JSON.stringify(bodyObj, null, 2);
+            } else {
+                bodyContainer.classList.add('hidden');
+            }
+
+            updateCurlPreview(method, path, bodyObj);
+        }
+
+        function updateCurlPreview(method, path, bodyObj) {
+            let curl = `curl -X ${method} http://localhost:8080/api${path}`;
+            if (bodyObj && (method === 'POST' || method === 'PUT')) {
+                curl += ` \\\n  -H "Content-Type: application/json" \\\n  -d '${JSON.stringify(bodyObj)}'`;
+            }
+            document.getElementById('curl-preview').textContent = curl;
+        }
+
+        async function executeApiRequest() {
+            const method = currentSelectedMethod;
+            const path = document.getElementById('req-path').value;
+            let body = null;
+
+            if (method === 'POST' || method === 'PUT') {
+                try {
+                    const rawBody = document.getElementById('req-body').value;
+                    body = rawBody ? JSON.parse(rawBody) : null;
+                } catch (err) {
+                    alert('Invalid JSON in request body');
+                    return;
+                }
+            }
+
+            const res = await simulateApi(method, path, body);
+
+            const statusBadge = document.getElementById('res-status-badge');
+            statusBadge.classList.remove('hidden');
+            statusBadge.textContent = `${res.status} ${res.status === 200 || res.status === 201 ? 'OK' : 'Error'}`;
+            statusBadge.className = `px-2 py-0.5 rounded text-xs font-mono font-bold ${res.status === 200 || res.status === 201 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`;
+
+            document.getElementById('res-time').textContent = res.time;
+            document.getElementById('res-output').textContent = JSON.stringify(res.data, null, 2);
+        }
+
+        function copyResponse() {
+            const text = document.getElementById('res-output').textContent;
+            navigator.clipboard.writeText(text);
+            showToast('Copied', 'Response JSON copied to clipboard', 'info');
+        }
+
+        // --- TOAST NOTIFICATIONS ---
+        function showToast(title, desc, type = 'success') {
+            const toast = document.getElementById('toast');
+            const icon = document.getElementById('toast-icon');
+            document.getElementById('toast-title').textContent = title;
+            document.getElementById('toast-desc').textContent = desc;
+
+            if (type === 'success') {
+                icon.className = 'w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-sm';
+                icon.innerHTML = '<i class="fa-solid fa-check"></i>';
+            } else {
+                icon.className = 'w-8 h-8 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center text-sm';
+                icon.innerHTML = '<i class="fa-solid fa-info"></i>';
+            }
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        // Initial render on load
+        renderTasks();
+    </script>
+</body>
+</html>

@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Precision Stopwatch | React App</title>
+    <!-- React & ReactDOM CDN -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <!-- Babel Standalone for JSX compilation -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            
+            /* Normal Theme Variables */
+            --bg-gradient-normal: radial-gradient(circle at 50% 30%, #1e293b 0%, #0f172a 100%);
+            --card-bg-normal: rgba(30, 41, 59, 0.7);
+            --card-border-normal: rgba(255, 255, 255, 0.1);
+            --card-shadow-normal: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 30px rgba(56, 189, 248, 0.1);
+            --text-primary-normal: #f8fafc;
+            --text-secondary-normal: #94a3b8;
+            --accent-color-normal: #38bdf8;
+            --ring-color-normal: #0284c7;
+
+            /* 1-Minute Threshold Alert Theme Variables */
+            --bg-gradient-alert: radial-gradient(circle at 50% 30%, #881337 0%, #4c0519 100%);
+            --card-bg-alert: rgba(136, 19, 55, 0.75);
+            --card-border-alert: rgba(255, 255, 255, 0.25);
+            --card-shadow-alert: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 40px rgba(244, 63, 94, 0.4);
+            --text-primary-alert: #ffffff;
+            --text-secondary-alert: #fecdd3;
+            --accent-color-alert: #fb7185;
+            --ring-color-alert: #f43f5e;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            transition: background 0.8s cubic-bezier(0.4, 0, 0.2, 1), color 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow-x: hidden;
+            user-select: none;
+        }
+
+        body.normal-theme {
+            background: var(--bg-gradient-normal);
+            color: var(--text-primary-normal);
+        }
+
+        body.alert-theme {
+            background: var(--bg-gradient-alert);
+            color: var(--text-primary-alert);
+        }
+
+        #root {
+            width: 100%;
+            max-width: 480px;
+        }
+
+        /* Stopwatch Container Card */
+        .stopwatch-card {
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 28px;
+            padding: 2.5rem 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            transition: background-color 0.8s ease, border-color 0.8s ease, box-shadow 0.8s ease;
+        }
+
+        .normal-theme .stopwatch-card {
+            background: var(--card-bg-normal);
+            border: 1px solid var(--card-border-normal);
+            box-shadow: var(--card-shadow-normal);
+        }
+
+        .alert-theme .stopwatch-card {
+            background: var(--card-bg-alert);
+            border: 1px solid var(--card-border-alert);
+            box-shadow: var(--card-shadow-alert);
+            animation: pulse-border 2s infinite ease-in-out;
+        }
+
+        @keyframes pulse-border {
+            0%, 100% { border-color: rgba(255, 255, 255, 0.25); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 30px rgba(244, 63, 94, 0.3); }
+            50% { border-color: rgba(251, 113, 133, 0.6); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 50px rgba(244, 63, 94, 0.6); }
+        }
+
+        /* App Header Header */
+        .app-header {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .app-title {
+            font-size: 0.875rem;
+            font-weight: 700;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            transition: color 0.8s ease;
+        }
+
+        .normal-theme .app-title { color: var(--text-secondary-normal); }
+        .alert-theme .app-title { color: var(--text-secondary-alert); }
+
+        /* Threshold Alert Indicator Banner */
+        .threshold-banner {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            margin-top: 0.5rem;
+            opacity: 0;
+            transform: translateY(-8px) scale(0.95);
+            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            pointer-events: none;
+        }
+
+        .threshold-banner.visible {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+
+        .alert-theme .threshold-banner {
+            background: rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            animation: bounce-subtle 1.5s infinite;
+        }
+
+        @keyframes bounce-subtle {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-3px); }
+        }
+
+        /* Timer Circular Container */
+        .timer-display-wrapper {
+            position: relative;
+            width: 250px;
+            height: 250px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 1rem 0 2rem 0;
+        }
+
+        .progress-ring {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
+        }
+
+        .progress-ring__circle-bg {
+            fill: transparent;
+            stroke-width: 6;
+            transition: stroke 0.8s ease;
+        }
+
+        .normal-theme .progress-ring__circle-bg { stroke: rgba(255, 255, 255, 0.06); }
+        .alert-theme .progress-ring__circle-bg { stroke: rgba(255, 255, 255, 0.15); }
+
+        .progress-ring__circle {
+            fill: transparent;
+            stroke-width: 6;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.1s linear, stroke 0.8s ease;
+        }
+
+        .normal-theme .progress-ring__circle { stroke: var(--accent-color-normal); }
+        .alert-theme .progress-ring__circle { stroke: #ffffff; }
+
+        .time-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 2;
+        }
+
+        .time-main {
+            font-family: var(--font-mono);
+            font-size: 3.5rem;
+            font-weight: 800;
+            line-height: 1;
+            letter-spacing: -0.03em;
+            font-variant-numeric: tabular-nums;
+            transition: color 0.8s ease, text-shadow 0.8s ease;
+        }
+
+        .normal-theme .time-main {
+            color: #ffffff;
+            text-shadow: 0 0 20px rgba(56, 189, 248, 0.3);
+        }
+
+        .alert-theme .time-main {
+            color: #ffffff;
+            text-shadow: 0 0 25px rgba(255, 255, 255, 0.6);
+        }
+
+        .time-ms {
+            font-family: var(--font-mono);
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-top: 0.35rem;
+            opacity: 0.85;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Target Indicator / Status Pill */
+        .status-pill {
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            margin-top: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            transition: all 0.8s ease;
+        }
+
+        .normal-theme .status-pill {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-secondary-normal);
+        }
+
+        .alert-theme .status-pill {
+            background: rgba(255, 255, 255, 0.25);
+            color: #ffffff;
+        }
+
+        /* Controls Area */
+        .controls-group {
+            display: flex;
+            align-items: center;
+            gap: 0.875rem;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .btn {
+            font-family: var(--font-sans);
+            font-size: 0.95rem;
+            font-weight: 600;
+            padding: 0.875rem 1.5rem;
+            border-radius: 16px;
+            border: none;
+            cursor: pointer;
+            outline: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            min-width: 100px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+        }
+
+        .btn:active:not(:disabled) {
+            transform: translateY(0);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* Start Button */
+        .btn-start {
+            background: #10b981;
+            color: #ffffff;
+            flex: 1.2;
+        }
+
+        .btn-start:hover:not(:disabled) {
+            background: #059669;
+        }
+
+        /* Pause Button */
+        .btn-pause {
+            background: #f59e0b;
+            color: #ffffff;
+            flex: 1.2;
+        }
+
+        .btn-pause:hover:not(:disabled) {
+            background: #d97706;
+        }
+
+        /* Reset Button */
+        .btn-reset {
+            background: rgba(255, 255, 255, 0.12);
+            color: #ffffff;
+            flex: 1;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .btn-reset:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.22);
+        }
+
+        /* Lap Button */
+        .btn-lap {
+            background: rgba(255, 255, 255, 0.08);
+            color: #ffffff;
+            flex: 1;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-lap:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.16);
+        }
+
+        /* Audio Toggle Button */
+        .audio-toggle {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            background: transparent;
+            border: none;
+            color: currentColor;
+            opacity: 0.6;
+            cursor: pointer;
+            padding: 0.4rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.2s, background 0.2s;
+        }
+
+        .audio-toggle:hover {
+            opacity: 1;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Laps Container */
+        .laps-container {
+            width: 100%;
+            margin-top: 1.75rem;
+            max-height: 160px;
+            overflow-y: auto;
+            padding-right: 0.25rem;
+        }
+
+        .laps-container::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .laps-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .laps-container::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+
+        .lap-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.6rem 0.85rem;
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .lap-label {
+            font-weight: 500;
+            opacity: 0.7;
+        }
+
+        .lap-time {
+            font-weight: 700;
+        }
+
+        /* Keyboard Hints */
+        .shortcut-hints {
+            margin-top: 1.5rem;
+            font-size: 0.7rem;
+            text-align: center;
+            opacity: 0.5;
+            letter-spacing: 0.03em;
+        }
+
+        /* Responsive Design Adjustments */
+        @media (max-width: 480px) {
+            .stopwatch-card {
+                padding: 2rem 1.25rem;
+                border-radius: 20px;
+            }
+
+            .timer-display-wrapper {
+                width: 210px;
+                height: 210px;
+            }
+
+            .time-main {
+                font-size: 2.85rem;
+            }
+
+            .btn {
+                padding: 0.75rem 1rem;
+                font-size: 0.875rem;
+                min-width: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useCallback } = React;
+
+        function StopwatchApp() {
+            // State
+            const [time, setTime] = useState(0); // Elapsed time in milliseconds
+            const [isRunning, setIsRunning] = useState(false);
+            const [laps, setLaps] = useState([]);
+            const [soundEnabled, setSoundEnabled] = useState(false);
+
+            const startTimeRef = useRef(0);
+            const intervalRef = useRef(null);
+
+            // Web Audio API synth for UI feedback
+            const playSound = useCallback((freq = 800, type = 'sine', duration = 0.08) => {
+                if (!soundEnabled) return;
+                try {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    if (!AudioContext) return;
+                    const ctx = new AudioContext();
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, ctx.currentTime);
+                    gain.gain.setValueAtTime(0.12, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+                    
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    
+                    osc.start();
+                    osc.stop(ctx.currentTime + duration);
+                } catch (e) {
+                    // Audio Context fallback silent
+                }
+            }, [soundEnabled]);
+
+            // Requirement 1: useEffect & setInterval precision timing logic with proper cleanup
+            useEffect(() => {
+                if (isRunning) {
+                    startTimeRef.current = Date.now() - time;
+                    intervalRef.current = setInterval(() => {
+                        setTime(Date.now() - startTimeRef.current);
+                    }, 10); // Update every 10ms for smooth sub-second tracking
+                } else {
+                    clearInterval(intervalRef.current);
+                }
+
+                return () => clearInterval(intervalRef.current);
+            }, [isRunning]);
+
+            // Calculations
+            const totalSeconds = Math.floor(time / 1000);
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            const milliseconds = Math.floor((time % 1000) / 10);
+
+            // Format helper
+            const padTwo = (num) => String(num).padStart(2, '0');
+
+            // Requirement 2: 1-Minute Threshold Detection (>= 60 seconds)
+            const isThresholdReached = totalSeconds >= 60;
+
+            // Audio notification when crossing the 1-minute threshold exactly
+            const prevThresholdRef = useRef(false);
+            useEffect(() => {
+                if (isThresholdReached && !prevThresholdRef.current) {
+                    playSound(1046.5, 'triangle', 0.25); // C6 alert tone
+                }
+                prevThresholdRef.current = isThresholdReached;
+            }, [isThresholdReached, playSound]);
+
+            // Apply body class for smooth global color transition
+            useEffect(() => {
+                if (isThresholdReached) {
+                    document.body.classList.remove('normal-theme');
+                    document.body.classList.add('alert-theme');
+                } else {
+                    document.body.classList.remove('alert-theme');
+                    document.body.classList.add('normal-theme');
+                }
+            }, [isThresholdReached]);
+
+            // Handlers
+            const handleStart = () => {
+                playSound(880, 'sine', 0.1);
+                setIsRunning(true);
+            };
+
+            const handlePause = () => {
+                playSound(587.33, 'sine', 0.1);
+                setIsRunning(false);
+            };
+
+            const handleReset = () => {
+                playSound(440, 'sine', 0.15);
+                setIsRunning(false);
+                setTime(0);
+                setLaps([]);
+            };
+
+            const handleLap = () => {
+                if (time > 0) {
+                    playSound(659.25, 'sine', 0.08);
+                    setLaps((prev) => [time, ...prev]);
+                }
+            };
+
+            // Keyboard Shortcuts
+            useEffect(() => {
+                const handleKeyDown = (e) => {
+                    if (e.code === 'Space') {
+                        e.preventDefault();
+                        if (isRunning) handlePause();
+                        else handleStart();
+                    } else if (e.code === 'KeyR') {
+                        e.preventDefault();
+                        handleReset();
+                    } else if (e.code === 'KeyL' && isRunning) {
+                        e.preventDefault();
+                        handleLap();
+                    }
+                };
+
+                window.addEventListener('keydown', handleKeyDown);
+                return () => window.removeEventListener('keydown', handleKeyDown);
+            }, [isRunning, time]);
+
+            // Progress Ring Circle Math (1 minute loop or fill)
+            const radius = 108;
+            const circumference = 2 * Math.PI * radius;
+            const progress = (seconds / 60);
+            const strokeDashoffset = circumference - (progress * circumference);
+
+            return (
+                <main className="stopwatch-card">
+                    {/* Audio Toggle Button */}
+                    <button 
+                        className="audio-toggle" 
+                        onClick={() => setSoundEnabled(!soundEnabled)}
+                        title={soundEnabled ? "Disable Audio Cues" : "Enable Audio Cues"}
+                        aria-label="Toggle Sound"
+                    >
+                        {soundEnabled ? (
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                                <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                            </svg>
+                        ) : (
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                <line x1="23" y1="9" x2="17" y2="15"></line>
+                                <line x1="17" y1="9" x2="23" y2="15"></line>
+                            </svg>
+                        )}
+                    </button>
+
+                    {/* App Header */}
+                    <header className="app-header">
+                        <div className="app-title">Precision Timer</div>
+                        
+                        {/* Visual Alert Badge for 1-Minute Threshold */}
+                        <div className={`threshold-banner ${isThresholdReached ? 'visible' : ''}`}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                            </svg>
+                            <span>1-MINUTE THRESHOLD HIT</span>
+                        </div>
+                    </header>
+
+                    {/* Timer Visual Ring & Display */}
+                    <div className="timer-display-wrapper">
+                        <svg className="progress-ring" viewBox="0 0 240 240">
+                            <circle
+                                className="progress-ring__circle-bg"
+                                r={radius}
+                                cx="120"
+                                cy="120"
+                            />
+                            <circle
+                                className="progress-ring__circle"
+                                r={radius}
+                                cx="120"
+                                cy="120"
+                                strokeDasharray={`${circumference} ${circumference}`}
+                                strokeDashoffset={strokeDashoffset}
+                            />
+                        </svg>
+
+                        <div className="time-content">
+                            {/* Requirement 1: MM:SS Display Format starting at 00:00 */}
+                            <div className="time-main">
+                                {padTwo(minutes)}:{padTwo(seconds)}
+                            </div>
+                            <div className="time-ms">
+                                .{padTwo(milliseconds)}
+                            </div>
+                            <div className="status-pill">
+                                {isThresholdReached ? '⚡ Alert State' : isRunning ? 'Running' : time > 0 ? 'Paused' : 'Ready'}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Action Controls */}
+                    <div className="controls-group">
+                        {!isRunning ? (
+                            <button 
+                                className="btn btn-start" 
+                                onClick={handleStart}
+                                aria-label="Start Timer"
+                            >
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                                    <polygon points="5 3 19 12 5 21 5 3"/>
+                                </svg>
+                                Start
+                            </button>
+                        ) : (
+                            <button 
+                                className="btn btn-pause" 
+                                onClick={handlePause}
+                                aria-label="Pause Timer"
+                            >
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                                    <rect x="6" y="4" width="4" height="16" rx="1"/>
+                                    <rect x="14" y="4" width="4" height="16" rx="1"/>
+                                </svg>
+                                Pause
+                            </button>
+                        )}
+
+                        <button 
+                            className="btn btn-reset" 
+                            onClick={handleReset}
+                            disabled={time === 0 && !isRunning}
+                            aria-label="Reset Timer"
+                        >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                                <path d="M3 3v5h5"/>
+                            </svg>
+                            Reset
+                        </button>
+
+                        <button 
+                            className="btn btn-lap" 
+                            onClick={handleLap}
+                            disabled={!isRunning}
+                            aria-label="Record Lap"
+                        >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
+                                <line x1="4" y1="22" x2="4" y2="15"/>
+                            </svg>
+                            Lap
+                        </button>
+                    </div>
+
+                    {/* Laps Record Table */}
+                    {laps.length > 0 && (
+                        <div className="laps-container">
+                            {laps.map((lapTime, index) => {
+                                const lapNum = laps.length - index;
+                                const lapMin = Math.floor(lapTime / 60000);
+                                const lapSec = Math.floor((lapTime % 60000) / 1000);
+                                const lapMs = Math.floor((lapTime % 1000) / 10);
+                                return (
+                                    <div className="lap-item" key={index}>
+                                        <span className="lap-label">Lap {padTwo(lapNum)}</span>
+                                        <span className="lap-time">
+                                            {padTwo(lapMin)}:{padTwo(lapSec)}.{padTwo(lapMs)}
+                                        </span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+
+                    {/* Keyboard Shortcuts Hint */}
+                    <div className="shortcut-hints">
+                        Keyboard: <kbd>Space</kbd> Start/Pause | <kbd>R</kbd> Reset | <kbd>L</kbd> Lap
+                    </div>
+                </main>
+            );
+        }
+
+        // Render React Application
+        const rootElement = document.getElementById('root');
+        const root = ReactDOM.createRoot(rootElement);
+        root.render(<StopwatchApp />);
+    </script>
+</body>
+</html>

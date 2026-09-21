@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en" class="dark h-full bg-zinc-950 text-zinc-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AuthNexus | Enterprise Authentication API Engine & Playground</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              900: '#312e81',
+            }
+          },
+          fontFamily: {
+            mono: ['JetBrains Mono', 'Fira Code', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+  <!-- FontAwesome Icons CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #18181b; }
+    ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #52525b; }
+  </style>
+</head>
+<body class="h-full flex flex-col font-sans antialiased text-zinc-200 bg-zinc-950 selection:bg-brand-500 selection:text-white">
+
+  <!-- Top Navigation Bar -->
+  <header class="border-b border-zinc-800 bg-zinc-900/80 backdrop-blur-md sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <!-- Logo & Title -->
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-400 flex items-center justify-center shadow-lg shadow-brand-500/20">
+            <i class="fa-solid font-bold fa-shield-halved text-white text-xl"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="font-extrabold text-lg text-white tracking-tight">AuthNexus</span>
+              <span class="px-2 py-0.5 text-xs font-semibold bg-brand-500/10 text-brand-400 border border-brand-500/30 rounded-full">v1.4.0 Live Engine</span>
+            </div>
+            <p class="text-xs text-zinc-400 hidden sm:block">Full-Stack User Authentication API & Developer Suite</p>
+          </div>
+        </div>
+
+        <!-- Global Header Controls -->
+        <div class="flex items-center gap-3">
+          <!-- Latency Simulation -->
+          <div class="hidden md:flex items-center gap-2 bg-zinc-800/80 border border-zinc-700/60 rounded-lg px-2.5 py-1 text-xs">
+            <i class="fa-solid fa-gauge-high text-amber-400"></i>
+            <span class="text-zinc-400">Latency:</span>
+            <select id="simulatedLatency" onchange="updateLatencyConfig()" class="bg-transparent text-white font-medium focus:outline-none cursor-pointer">
+              <option value="0" class="bg-zinc-900">0 ms (Instant)</option>
+              <option value="150" selected class="bg-zinc-900">150 ms (Normal)</option>
+              <option value="500" class="bg-zinc-900">500 ms (Slow 3G)</option>
+              <option value="1200" class="bg-zinc-900">1200 ms (High)</option>
+            </select>
+          </div>
+
+          <!-- Token Status Pill -->
+          <div id="globalAuthPill" class="hidden sm:flex items-center gap-2 bg-zinc-800 border border-zinc-700/80 px-3 py-1 rounded-lg text-xs">
+            <span class="w-2 h-2 rounded-full bg-rose-500" id="globalAuthDot"></span>
+            <span id="globalAuthText" class="text-zinc-300 font-medium">Unauthenticated</span>
+          </div>
+
+          <!-- Quick Actions -->
+          <button onclick="resetEngineData()" class="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg border border-transparent hover:border-zinc-700 transition" title="Reset Server Database">
+            <i class="fa-solid fa-rotate-left"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="flex space-x-1 border-t border-zinc-800/60 overflow-x-auto py-2 text-xs font-medium scrollbar-none">
+        <button onclick="switchTab('demo')" id="tab-btn-demo" class="tab-btn active-tab flex items-center gap-2 px-3.5 py-2 rounded-lg transition whitespace-nowrap">
+          <i class="fa-solid fa-laptop-code"></i> Live Auth Flow
+        </button>
+        <button onclick="switchTab('explorer')" id="tab-btn-explorer" class="tab-btn flex items-center gap-2 px-3.5 py-2 rounded-lg transition whitespace-nowrap">
+          <i class="fa-solid fa-terminal"></i> API Explorer
+        </button>
+        <button onclick="switchTab('jwt')" id="tab-btn-jwt" class="tab-btn flex items-center gap-2 px-3.5 py-2 rounded-lg transition whitespace-nowrap">
+          <i class="fa-solid fa-key"></i> JWT Inspector
+        </button>
+        <button onclick="switchTab('db')" id="tab-btn-db" class="tab-btn flex items-center gap-2 px-3.5 py-2 rounded-lg transition whitespace-nowrap">
+          <i class="fa-solid fa-database"></i> Database & Sessions
+        </button>
+        <button onclick="switchTab('audit')" id="tab-btn-audit" class="tab-btn flex items-center gap-2 px-3.5 py-2 rounded-lg transition whitespace-nowrap">
+          <i class="fa-solid fa-list-check"></i> Security Audit Logs
+        </button>
+        <button onclick="switchTab('docs')" id="tab-btn-docs" class="tab-btn flex items-center gap-2 px-3.5 py-2 rounded-lg transition whitespace-nowrap">
+          <i class="fa-solid fa-book-bookmark"></i> Docs & Code Generator
+        </button>
+        <button onclick="switchTab('settings')" id="tab-btn-settings" class="tab-btn flex items-center gap-2 px-3.5 py-2 rounded-lg transition whitespace-nowrap">
+          <i class="fa-solid fa-sliders"></i> Engine Config
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+    
+    <!-- ================================================================= -->
+    <!-- TAB 1: LIVE AUTH FLOW DEMO (CLIENT APP PORTAL) -->
+    <!-- ================================================================= -->
+    <div id="tab-demo" class="tab-content space-y-6">
+      <!-- Info Header -->
+      <div class="bg-gradient-to-r from-brand-900/40 via-zinc-900 to-zinc-900 border border-brand-500/20 rounded-2xl p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-xl font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-window-restore text-brand-400"></i> Interactive Client Portal
+          </h2>
+          <p class="text-sm text-zinc-400 mt-1">
+            Test full client-side authentication cycles: Registration, Login, MFA Challenges, Protected Route Access, and Token Auto-Refresh handling.
+          </p>
+        </div>
+        <div class="flex items-center gap-2 bg-zinc-950/60 p-2 rounded-xl border border-zinc-800 text-xs">
+          <button onclick="fillDemoCredentials('admin')" class="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-lg transition font-medium">Fill Admin</button>
+          <button onclick="fillDemoCredentials('user')" class="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-lg transition font-medium">Fill User</button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Client UI Container -->
+        <div class="lg:col-span-7 bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-xl flex flex-col min-h-[520px]">
+          
+          <!-- Portal Sub-Header Navigation -->
+          <div class="flex items-center justify-between pb-4 mb-6 border-b border-zinc-800">
+            <div class="flex items-center gap-2">
+              <div class="w-3 h-3 rounded-full bg-rose-500"></div>
+              <div class="w-3 h-3 rounded-full bg-amber-500"></div>
+              <div class="w-3 h-3 rounded-full bg-emerald-500"></div>
+              <span class="text-xs text-zinc-500 font-mono ml-2">https://app.nexus-enterprise.io</span>
+            </div>
+            <div id="demoPortalStatus" class="text-xs font-semibold px-2.5 py-1 rounded-md bg-zinc-800 text-zinc-400">
+              Logged Out
+            </div>
+          </div>
+
+          <!-- VIEW: LOGIN / REGISTER -->
+          <div id="demoAuthFormsView" class="flex-1 flex flex-col justify-center max-w-md mx-auto w-full py-4">
+            <!-- Auth Form Selector Tabs -->
+            <div class="flex bg-zinc-950 p-1 rounded-xl mb-6 border border-zinc-800">
+              <button onclick="toggleDemoForm('login')" id="demoLoginFormBtn" class="flex-1 py-2 text-xs font-semibold rounded-lg bg-brand-600 text-white transition">Sign In</button>
+              <button onclick="toggleDemoForm('register')" id="demoRegisterFormBtn" class="flex-1 py-2 text-xs font-semibold rounded-lg text-zinc-400 hover:text-white transition">Create Account</button>
+              <button onclick="toggleDemoForm('forgot')" id="demoForgotFormBtn" class="flex-1 py-2 text-xs font-semibold rounded-lg text-zinc-400 hover:text-white transition">Reset Password</button>
+            </div>
+
+            <!-- LOGIN FORM -->
+            <form id="formDemoLogin" onsubmit="handleDemoLogin(event)" class="space-y-4">
+              <div>
+                <label class="block text-xs font-medium text-zinc-400 mb-1">Email Address</label>
+                <input type="email" id="demoLoginEmail" required value="admin@nexus.io" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500 transition">
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-zinc-400 mb-1">Password</label>
+                <input type="password" id="demoLoginPassword" required value="Admin123!" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500 transition">
+              </div>
+              <button type="submit" id="btnDemoLoginSubmit" class="w-full py-3 bg-brand-600 hover:bg-brand-500 font-semibold text-white text-sm rounded-xl transition shadow-lg shadow-brand-600/30 flex items-center justify-center gap-2">
+                <span>Sign In to Dashboard</span> <i class="fa-solid fa-arrow-right text-xs"></i>
+              </button>
+            </form>
+
+            <!-- REGISTER FORM -->
+            <form id="formDemoRegister" onsubmit="handleDemoRegister(event)" class="space-y-4 hidden">
+              <div>
+                <label class="block text-xs font-medium text-zinc-400 mb-1">Full Name</label>
+                <input type="text" id="demoRegName" required placeholder="Jane Doe" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500 transition">
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-zinc-400 mb-1">Email Address</label>
+                <input type="email" id="demoRegEmail" required placeholder="jane@example.com" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500 transition">
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-zinc-400 mb-1">Password</label>
+                <input type="password" id="demoRegPassword" required placeholder="••••••••" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500 transition">
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-zinc-400 mb-1">Role Assignment</label>
+                <select id="demoRegRole" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500 transition">
+                  <option value="user">User (Standard)</option>
+                  <option value="admin">Administrator</option>
+                </select>
+              </div>
+              <button type="submit" id="btnDemoRegisterSubmit" class="w-full py-3 bg-brand-600 hover:bg-brand-500 font-semibold text-white text-sm rounded-xl transition shadow-lg shadow-brand-600/30 flex items-center justify-center gap-2">
+                <span>Register Account</span> <i class="fa-solid fa-user-plus text-xs"></i>
+              </button>
+            </form>
+
+            <!-- FORGOT PASSWORD FORM -->
+            <form id="formDemoForgot" onsubmit="handleDemoForgot(event)" class="space-y-4 hidden">
+              <p class="text-xs text-zinc-400">Enter your email to receive a password reset token from the API.</p>
+              <div>
+                <label class="block text-xs font-medium text-zinc-400 mb-1">Email Address</label>
+                <input type="email" id="demoForgotEmail" required placeholder="admin@nexus.io" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500 transition">
+              </div>
+              <button type="submit" class="w-full py-3 bg-zinc-800 hover:bg-zinc-700 font-semibold text-white text-sm rounded-xl transition">
+                Send Reset Token
+              </button>
+            </form>
+
+            <!-- MFA CHALLENGE VIEW -->
+            <div id="demoMfaChallengeView" class="hidden space-y-4 text-center">
+              <div class="w-12 h-12 rounded-full bg-amber-500/20 text-amber-400 mx-auto flex items-center justify-center text-xl">
+                <i class="fa-solid fa-shield-cat"></i>
+              </div>
+              <h3 class="text-lg font-bold text-white">2-Factor Authentication Required</h3>
+              <p class="text-xs text-zinc-400">Enter the 6-digit TOTP code generated by your Authenticator app. (Hint: Use <strong>123456</strong> for testing)</p>
+              <input type="text" id="demoMfaCode" placeholder="123456" maxlength="6" class="w-48 mx-auto tracking-widest text-center text-2xl font-mono bg-zinc-950 border border-amber-500/50 rounded-xl py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-amber-500">
+              <div class="flex gap-2">
+                <button onclick="handleDemoMfaSubmit()" class="flex-1 py-2.5 bg-amber-600 hover:bg-amber-500 font-semibold text-white text-xs rounded-xl transition">Verify & Access</button>
+                <button onclick="cancelDemoAuth()" class="py-2.5 px-4 bg-zinc-800 hover:bg-zinc-700 text-xs rounded-xl text-zinc-300">Cancel</button>
+              </div>
+            </div>
+
+            <!-- SSO Fast Options -->
+            <div id="demoSsoDivider" class="mt-6 pt-6 border-t border-zinc-800/80">
+              <p class="text-center text-[11px] text-zinc-500 uppercase tracking-wider font-semibold mb-3">Or Mock Single Sign-On</p>
+              <div class="grid grid-cols-2 gap-3">
+                <button onclick="handleDemoSso('Google')" class="flex items-center justify-center gap-2 py-2 border border-zinc-800 hover:border-zinc-700 rounded-xl text-xs font-medium text-zinc-300 hover:bg-zinc-800/50 transition">
+                  <i class="fa-brands fa-google text-rose-500"></i> Google SSO
+                </button>
+                <button onclick="handleDemoSso('GitHub')" class="flex items-center justify-center gap-2 py-2 border border-zinc-800 hover:border-zinc-700 rounded-xl text-xs font-medium text-zinc-300 hover:bg-zinc-800/50 transition">
+                  <i class="fa-brands fa-github text-white"></i> GitHub SSO
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- VIEW: PROTECTED DASHBOARD (LOGGED IN) -->
+          <div id="demoDashboardView" class="hidden flex-1 flex flex-col justify-between space-y-6">
+            <div>
+              <div class="flex items-center justify-between bg-zinc-950 p-4 rounded-xl border border-zinc-800 mb-6">
+                <div class="flex items-center gap-3">
+                  <div class="w-12 h-12 rounded-full bg-brand-600 text-white flex items-center justify-center text-lg font-bold" id="dashUserAvatar">
+                    A
+                  </div>
+                  <div>
+                    <h3 class="font-bold text-white text-base" id="dashUserName">System Admin</h3>
+                    <p class="text-xs text-zinc-400" id="dashUserEmail">admin@nexus.io</p>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <span id="dashUserBadge" class="px-2.5 py-1 text-xs font-bold bg-brand-500/20 text-brand-300 border border-brand-500/40 rounded-full">ADMIN</span>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-4 mb-6">
+                <div class="bg-zinc-950/80 border border-zinc-800 p-4 rounded-xl">
+                  <p class="text-xs text-zinc-500">MFA Status</p>
+                  <p id="dashMfaStatus" class="text-sm font-semibold text-emerald-400 mt-1"><i class="fa-solid fa-circle-check"></i> Active & Protected</p>
+                </div>
+                <div class="bg-zinc-950/80 border border-zinc-800 p-4 rounded-xl">
+                  <p class="text-xs text-zinc-500">Active Token TTL</p>
+                  <p id="dashTokenTtl" class="text-sm font-semibold text-brand-400 mt-1">Calculating...</p>
+                </div>
+              </div>
+
+              <!-- Protected Resource Fetch Test -->
+              <div class="bg-zinc-950 p-4 rounded-xl border border-zinc-800">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-xs font-semibold text-zinc-300">Protected API Route: <code class="text-brand-400">/api/v1/auth/me</code></span>
+                  <button onclick="fetchProtectedData()" class="text-xs text-brand-400 hover:underline"><i class="fa-solid fa-rotate"></i> Test Endpoint</button>
+                </div>
+                <pre id="dashProtectedOutput" class="text-xs font-mono text-zinc-400 bg-zinc-900 p-3 rounded-lg overflow-x-auto max-h-32 border border-zinc-800">Click test to fetch protected user profile...</pre>
+              </div>
+            </div>
+
+            <!-- Action Toolbar -->
+            <div class="pt-4 border-t border-zinc-800 flex flex-wrap items-center justify-between gap-3">
+              <div class="flex items-center gap-2">
+                <button onclick="forceTokenExpire()" class="px-3 py-2 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 rounded-lg text-xs font-medium transition" title="Force Access Token Expiration to test auto-refresh">
+                  <i class="fa-solid fa-bolt text-xs"></i> Force Expire Token
+                </button>
+                <button onclick="testAutoRefreshToken()" class="px-3 py-2 bg-brand-500/10 hover:bg-brand-500/20 border border-brand-500/30 text-brand-400 rounded-lg text-xs font-medium transition">
+                  <i class="fa-solid fa-arrows-rotate text-xs"></i> Call Refresh API
+                </button>
+              </div>
+              <button onclick="handleDemoLogout()" class="px-4 py-2 bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 rounded-lg text-xs font-semibold transition">
+                <i class="fa-solid fa-right-from-bracket"></i> Sign Out
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Realtime Client Storage Inspector -->
+        <div class="lg:col-span-5 bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-xl flex flex-col justify-between">
+          <div>
+            <h3 class="text-sm font-bold text-white flex items-center gap-2 mb-4">
+              <i class="fa-solid fa-box-archive text-brand-400"></i> Client Storage & Auth State
+            </h3>
+
+            <!-- Access Token State -->
+            <div class="space-y-4">
+              <div>
+                <div class="flex items-center justify-between text-xs mb-1">
+                  <span class="font-medium text-zinc-400">Access Token (In-Memory / Bearer)</span>
+                  <span id="clientTokenBadge" class="text-[10px] px-2 py-0.5 rounded bg-rose-500/20 text-rose-400 border border-rose-500/30 font-semibold">Missing</span>
+                </div>
+                <div id="clientAccessTokenBox" class="bg-zinc-950 font-mono text-[11px] p-3 rounded-lg border border-zinc-800 text-zinc-500 break-all max-h-24 overflow-y-auto">
+                  null
+                </div>
+              </div>
+
+              <!-- Refresh Token State -->
+              <div>
+                <div class="flex items-center justify-between text-xs mb-1">
+                  <span class="font-medium text-zinc-400">Refresh Token (HttpOnly Cookie Simulation)</span>
+                  <span id="clientRefreshBadge" class="text-[10px] px-2 py-0.5 rounded bg-zinc-800 text-zinc-500 font-semibold">None</span>
+                </div>
+                <div id="clientRefreshTokenBox" class="bg-zinc-950 font-mono text-[11px] p-3 rounded-lg border border-zinc-800 text-zinc-500 break-all max-h-20 overflow-y-auto">
+                  null
+                </div>
+              </div>
+
+              <!-- Auth Logic Insights -->
+              <div class="bg-zinc-950/60 border border-zinc-800 rounded-xl p-3.5 space-y-2">
+                <span class="text-xs font-bold text-zinc-300 block">Security Workflow Specs</span>
+                <ul class="text-xs text-zinc-400 space-y-1.5 list-disc list-inside">
+                  <li>Access tokens signed with <code class="text-zinc-200">HS256</code> algorithm.</li>
+                  <li>Automatic request interceptor attaches <code class="text-brand-300">Authorization: Bearer &lt;JWT&gt;</code>.</li>
+                  <li>On HTTP 401 error, automatically attempts silent token rotation via <code class="text-zinc-200">/auth/refresh</code>.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom Console Snippet -->
+          <div class="pt-4 border-t border-zinc-800 text-xs font-mono text-zinc-500 flex items-center justify-between">
+            <span>State Synchronizer: Active</span>
+            <span class="text-emerald-400 flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Listener Ready</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- TAB 2: INTERACTIVE API EXPLORER (POSTMAN / SWAGGER MOCK) -->
+    <!-- ================================================================= -->
+    <div id="tab-explorer" class="tab-content space-y-6 hidden">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Endpoint Selection Sidebar -->
+        <div class="lg:col-span-4 bg-zinc-900 border border-zinc-800 rounded-2xl p-4 shadow-xl">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-zinc-400 mb-3 px-2">API Endpoints Catalog</h3>
+          <div class="space-y-1" id="endpointCatalogList">
+            <!-- Endpoints inserted dynamically -->
+          </div>
+        </div>
+
+        <!-- Request / Response Builder Panel -->
+        <div class="lg:col-span-8 space-y-6">
+          
+          <!-- Request Builder -->
+          <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 shadow-xl space-y-4">
+            <!-- Endpoint Header Bar -->
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              <span id="expMethodBadge" class="px-3 py-1.5 font-mono text-xs font-bold rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-center">POST</span>
+              <input type="text" id="expEndpointUrl" readonly class="flex-1 font-mono text-xs bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-zinc-200 focus:outline-none">
+              <button onclick="executeApiExplorerRequest()" id="btnExecuteApi" class="px-5 py-2 bg-brand-600 hover:bg-brand-500 text-white font-semibold rounded-lg text-xs transition flex items-center justify-center gap-2 shadow-lg shadow-brand-600/30">
+                <i class="fa-solid fa-paper-plane"></i> Send Request
+              </button>
+            </div>
+
+            <!-- Request Configuration Tabs -->
+            <div>
+              <div class="flex border-b border-zinc-800 text-xs font-medium space-x-4 mb-3">
+                <button onclick="switchExpReqTab('body')" id="expTabBtnBody" class="pb-2 border-b-2 border-brand-500 text-brand-400 font-bold">Request Body (JSON)</button>
+                <button onclick="switchExpReqTab('headers')" id="expTabBtnHeaders" class="pb-2 border-b-2 border-transparent text-zinc-400 hover:text-white">Headers</button>
+              </div>
+
+              <!-- Request Body Tab -->
+              <div id="expReqBodyContainer">
+                <textarea id="expRequestBody" rows="7" class="w-full bg-zinc-950 font-mono text-xs text-brand-300 p-3 rounded-xl border border-zinc-800 focus:outline-none focus:border-brand-500" placeholder="{}"></textarea>
+              </div>
+
+              <!-- Headers Tab -->
+              <div id="expReqHeadersContainer" class="hidden space-y-2">
+                <div class="grid grid-cols-12 gap-2 text-xs font-medium text-zinc-400 mb-1">
+                  <span class="col-span-5">Header Key</span>
+                  <span class="col-span-7">Header Value</span>
+                </div>
+                <div class="grid grid-cols-12 gap-2">
+                  <input type="text" value="Content-Type" readonly class="col-span-5 bg-zinc-950 border border-zinc-800 rounded-lg p-2 text-xs font-mono text-zinc-300">
+                  <input type="text" value="application/json" readonly class="col-span-7 bg-zinc-950 border border-zinc-800 rounded-lg p-2 text-xs font-mono text-zinc-300">
+                </div>
+                <div class="grid grid-cols-12 gap-2">
+                  <input type="text" value="Authorization" readonly class="col-span-5 bg-zinc-950 border border-zinc-800 rounded-lg p-2 text-xs font-mono text-zinc-300">
+                  <input type="text" id="expAuthHeaderInput" placeholder="Bearer <jwt_token>" class="col-span-7 bg-zinc-950 border border-zinc-800 rounded-lg p-2 text-xs font-mono text-brand-300 focus:outline-none">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Response Inspector Panel -->
+          <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 shadow-xl space-y-4">
+            <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+              <h4 class="text-xs font-bold text-white uppercase tracking-wider">Response Terminal</h4>
+              <div class="flex items-center gap-3">
+                <span id="expResponseStatus" class="px-2.5 py-1 text-xs font-mono font-bold rounded bg-zinc-800 text-zinc-400">--- Status</span>
+                <span id="expResponseTime" class="text-xs font-mono text-zinc-500">0 ms</span>
+                <button onclick="copyResponseToClipboard()" class="text-xs text-zinc-400 hover:text-white px-2 py-1 bg-zinc-800 rounded border border-zinc-700 transition" title="Copy Response JSON">
+                  <i class="fa-regular fa-copy"></i> Copy
+                </button>
+              </div>
+            </div>
+
+            <!-- Formatted Response Output -->
+            <pre id="expResponseBody" class="bg-zinc-950 font-mono text-xs text-zinc-300 p-4 rounded-xl border border-zinc-800 overflow-x-auto min-h-[160px] max-h-80">Send an API request above to inspect response...</pre>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- TAB 3: JWT INSPECTOR & DECODER -->
+    <!-- ================================================================= -->
+    <div id="tab-jwt" class="tab-content space-y-6 hidden">
+      <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-xl space-y-6">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-key text-brand-400"></i> JWT Token Inspector & Debugger
+            </h2>
+            <p class="text-xs text-zinc-400 mt-1">Paste or generate a JWT string to decode Header, Claims Payload, Signature & Expiration.</p>
+          </div>
+          <button onclick="loadCurrentSessionTokenToJwt()" class="px-3 py-2 bg-brand-500/10 hover:bg-brand-500/20 text-brand-400 border border-brand-500/30 rounded-lg text-xs font-medium transition">
+            Load Current Active Token
+          </button>
+        </div>
+
+        <!-- Token Input Textarea -->
+        <div>
+          <label class="block text-xs font-medium text-zinc-400 mb-1">Encoded JWT String</label>
+          <textarea id="jwtRawInput" oninput="decodeJwtInput()" rows="3" class="w-full bg-zinc-950 font-mono text-xs text-zinc-200 p-3 rounded-xl border border-zinc-800 focus:outline-none focus:border-brand-500" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."></textarea>
+        </div>
+
+        <!-- Live Expiration Timer -->
+        <div id="jwtTimerCard" class="bg-zinc-950 border border-zinc-800 p-4 rounded-xl flex items-center justify-between hidden">
+          <div class="flex items-center gap-3">
+            <i class="fa-solid fa-hourglass-half text-brand-400 text-lg"></i>
+            <div>
+              <p class="text-xs font-semibold text-white">Token Expiration Countdown</p>
+              <p id="jwtCountdownText" class="text-xs font-mono text-zinc-400">Active - Expires in 899 seconds</p>
+            </div>
+          </div>
+          <div id="jwtStatusBadge" class="px-3 py-1 text-xs font-bold rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+            VALID
+          </div>
+        </div>
+
+        <!-- Decoded Output Columns -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <!-- Header -->
+          <div class="space-y-2">
+            <span class="text-xs font-bold text-rose-400 uppercase tracking-wider block">1. Header (Algorithm & Token Type)</span>
+            <pre id="jwtDecodedHeader" class="bg-zinc-950 font-mono text-xs text-rose-300 p-3 rounded-xl border border-zinc-800 min-h-[140px]">{}</pre>
+          </div>
+
+          <!-- Payload -->
+          <div class="space-y-2">
+            <span class="text-xs font-bold text-purple-400 uppercase tracking-wider block">2. Payload (Claims Data)</span>
+            <pre id="jwtDecodedPayload" class="bg-zinc-950 font-mono text-xs text-purple-300 p-3 rounded-xl border border-zinc-800 min-h-[140px]">{}</pre>
+          </div>
+
+          <!-- Signature -->
+          <div class="space-y-2">
+            <span class="text-xs font-bold text-cyan-400 uppercase tracking-wider block">3. Signature Verification</span>
+            <div class="bg-zinc-950 font-mono text-xs text-cyan-300 p-3 rounded-xl border border-zinc-800 min-h-[140px] space-y-2 break-all">
+              <p class="text-zinc-500 text-[11px]">HMACSHA256(</p>
+              <p class="text-zinc-400">base64UrlEncode(header) + "." + base64UrlEncode(payload),</p>
+              <p class="text-amber-300">secret_key_nexus_2025</p>
+              <p class="text-zinc-500 text-[11px]">)</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- TAB 4: DATABASE & ACTIVE SESSIONS (STATE INSPECTOR) -->
+    <!-- ================================================================= -->
+    <div id="tab-db" class="tab-content space-y-6 hidden">
+      <!-- Users Table Container -->
+      <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-xl space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-users text-brand-400"></i> Server User Store (Database Mock)
+            </h3>
+            <p class="text-xs text-zinc-400">Inspect registered users, role assignments, hashed password storage, and MFA statuses.</p>
+          </div>
+          <button onclick="openCreateUserModal()" class="px-3 py-1.5 bg-brand-600 hover:bg-brand-500 text-white rounded-lg text-xs font-semibold transition">
+            + Add Seed User
+          </button>
+        </div>
+
+        <div class="overflow-x-auto border border-zinc-800 rounded-xl">
+          <table class="w-full text-left text-xs font-sans">
+            <thead class="bg-zinc-950 text-zinc-400 uppercase font-semibold text-[10px] tracking-wider border-b border-zinc-800">
+              <tr>
+                <th class="p-3">User ID / Email</th>
+                <th class="p-3">Name</th>
+                <th class="p-3">Role</th>
+                <th class="p-3">Password Hash (Bcrypt Mock)</th>
+                <th class="p-3">MFA</th>
+                <th class="p-3">Created</th>
+                <th class="p-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="dbUserTableBody" class="divide-y divide-zinc-800 text-zinc-300">
+              <!-- Rendered Dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Active Refresh Token Sessions Table -->
+      <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-xl space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-laptop text-emerald-400"></i> Active Refresh Sessions
+            </h3>
+            <p class="text-xs text-zinc-400">Active server-side refresh token sessions with revoke capabilities.</p>
+          </div>
+          <button onclick="revokeAllSessions()" class="px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-lg text-xs font-semibold transition">
+            Revoke All Sessions
+          </button>
+        </div>
+
+        <div class="overflow-x-auto border border-zinc-800 rounded-xl">
+          <table class="w-full text-left text-xs font-sans">
+            <thead class="bg-zinc-950 text-zinc-400 uppercase font-semibold text-[10px] tracking-wider border-b border-zinc-800">
+              <tr>
+                <th class="p-3">Session ID</th>
+                <th class="p-3">User Email</th>
+                <th class="p-3">User Agent / IP</th>
+                <th class="p-3">Issued At</th>
+                <th class="p-3">Expires At</th>
+                <th class="p-3 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody id="dbSessionTableBody" class="divide-y divide-zinc-800 text-zinc-300">
+              <!-- Rendered Dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- TAB 5: SECURITY AUDIT LOGS -->
+    <!-- ================================================================= -->
+    <div id="tab-audit" class="tab-content space-y-6 hidden">
+      <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-xl space-y-4">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-shield-cat text-amber-400"></i> Security Audit Trail & Event Logs
+            </h3>
+            <p class="text-xs text-zinc-400">Real-time immutable security logs tracking logins, token refreshes, MFA challenges, and failures.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <input type="text" id="auditSearchInput" oninput="renderAuditLogs()" placeholder="Filter events..." class="bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5 text-xs text-zinc-200 focus:outline-none">
+            <button onclick="clearAuditLogs()" class="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-xs font-medium transition">Clear Logs</button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto border border-zinc-800 rounded-xl max-h-[500px] overflow-y-auto">
+          <table class="w-full text-left text-xs font-mono">
+            <thead class="bg-zinc-950 text-zinc-400 uppercase font-semibold text-[10px] tracking-wider sticky top-0 border-b border-zinc-800">
+              <tr>
+                <th class="p-3">Timestamp</th>
+                <th class="p-3">Event Type</th>
+                <th class="p-3">Actor Email</th>
+                <th class="p-3">Status</th>
+                <th class="p-3">Client IP</th>
+                <th class="p-3">Details</th>
+              </tr>
+            </thead>
+            <tbody id="auditTableBody" class="divide-y divide-zinc-800/60 text-zinc-300">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- TAB 6: DOCS & CODE GENERATOR -->
+    <!-- ================================================================= -->
+    <div id="tab-docs" class="tab-content space-y-6 hidden">
+      <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-xl space-y-6">
+        <div>
+          <h2 class="text-lg font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-code text-brand-400"></i> API Integration Code Snippet Generator
+          </h2>
+          <p class="text-xs text-zinc-400 mt-1">Select an endpoint and language framework to generate ready-to-use production code.</p>
+        </div>
+
+        <!-- Controls Selector -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-medium text-zinc-400 mb-1">Target Endpoint</label>
+            <select id="codeGenEndpointSelect" onchange="generateCodeSnippet()" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500">
+              <option value="login">POST /api/v1/auth/login</option>
+              <option value="register">POST /api/v1/auth/register</option>
+              <option value="me">GET /api/v1/auth/me (Protected Route)</option>
+              <option value="refresh">POST /api/v1/auth/refresh</option>
+              <option value="mfaVerify">POST /api/v1/auth/mfa/verify</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-zinc-400 mb-1">Programming Language / SDK</label>
+            <div class="flex gap-1 bg-zinc-950 p-1 rounded-lg border border-zinc-800">
+              <button onclick="selectCodeLang('curl')" id="langBtn-curl" class="lang-btn active-lang flex-1 py-1.5 text-xs font-semibold rounded text-center">cURL</button>
+              <button onclick="selectCodeLang('js')" id="langBtn-js" class="lang-btn flex-1 py-1.5 text-xs font-semibold rounded text-center">JS Fetch</button>
+              <button onclick="selectCodeLang('python')" id="langBtn-python" class="lang-btn flex-1 py-1.5 text-xs font-semibold rounded text-center">Python</button>
+              <button onclick="selectCodeLang('node')" id="langBtn-node" class="lang-btn flex-1 py-1.5 text-xs font-semibold rounded text-center">Node Axios</button>
+              <button onclick="selectCodeLang('go')" id="langBtn-go" class="lang-btn flex-1 py-1.5 text-xs font-semibold rounded text-center">Go</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Generated Snippet Display -->
+        <div class="relative">
+          <button onclick="copyGeneratedCode()" class="absolute top-3 right-3 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 px-3 py-1.5 rounded-md transition flex items-center gap-1.5">
+            <i class="fa-regular fa-copy"></i> Copy Code
+          </button>
+          <pre id="codeSnippetOutput" class="bg-zinc-950 font-mono text-xs text-brand-200 p-5 rounded-xl border border-zinc-800 overflow-x-auto min-h-[220px]">Generating snippet...</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- TAB 7: SERVER ENGINE CONFIG -->
+    <!-- ================================================================= -->
+    <div id="tab-settings" class="tab-content space-y-6 hidden">
+      <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-xl space-y-6">
+        <div>
+          <h2 class="text-lg font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-sliders text-brand-400"></i> Server Auth Engine Parameters
+          </h2>
+          <p class="text-xs text-zinc-400 mt-1">Configure live authentication rules, token lifespans, rate limiting, and security policies.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- JWT Lifespan Settings -->
+          <div class="bg-zinc-950 p-4 rounded-xl border border-zinc-800 space-y-3">
+            <h4 class="text-xs font-bold text-white uppercase tracking-wider">Access Token Expiration TTL</h4>
+            <p class="text-xs text-zinc-400">Set shorter TTLs to test automatic token rotation logic in real-time.</p>
+            <select id="cfgAccessTtl" onchange="saveEngineSettings()" class="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2.5 text-xs text-white focus:outline-none">
+              <option value="15">15 Seconds (Fast Expiration Test)</option>
+              <option value="60">60 Seconds</option>
+              <option value="900" selected>15 Minutes (Standard)</option>
+              <option value="3600">1 Hour</option>
+            </select>
+          </div>
+
+          <!-- Rate Limiting Config -->
+          <div class="bg-zinc-950 p-4 rounded-xl border border-zinc-800 space-y-3">
+            <h4 class="text-xs font-bold text-white uppercase tracking-wider">Rate Limiter (Max Failed Logins)</h4>
+            <p class="text-xs text-zinc-400">Block IP/Account after specified consecutive failed attempts.</p>
+            <select id="cfgRateLimitMax" onchange="saveEngineSettings()" class="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2.5 text-xs text-white focus:outline-none">
+              <option value="3">3 Attempts Max</option>
+              <option value="5" selected>5 Attempts Max</option>
+              <option value="10">10 Attempts Max</option>
+              <option value="999">Disabled</option>
+            </select>
+          </div>
+
+          <!-- Security Policy Flags -->
+          <div class="bg-zinc-950 p-4 rounded-xl border border-zinc-800 space-y-3 md:col-span-2">
+            <h4 class="text-xs font-bold text-white uppercase tracking-wider">Security Flags</h4>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <label class="flex items-center gap-3 bg-zinc-900 p-3 rounded-lg border border-zinc-800 cursor-pointer">
+                <input type="checkbox" id="cfgRequireMfaAdmin" onchange="saveEngineSettings()" checked class="w-4 h-4 accent-brand-600 rounded">
+                <div>
+                  <span class="text-xs font-semibold text-white block">Require MFA for Admin Logins</span>
+                  <span class="text-[11px] text-zinc-400">Enforces 2FA challenge when signing into Admin role.</span>
+                </div>
+              </label>
+
+              <label class="flex items-center gap-3 bg-zinc-900 p-3 rounded-lg border border-zinc-800 cursor-pointer">
+                <input type="checkbox" id="cfgEnableAuditLogging" onchange="saveEngineSettings()" checked class="w-4 h-4 accent-brand-600 rounded">
+                <div>
+                  <span class="text-xs font-semibold text-white block">Enable Security Event Logging</span>
+                  <span class="text-[11px] text-zinc-400">Record every auth event to audit trail.</span>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="pt-4 border-t border-zinc-800 flex justify-end">
+          <button onclick="resetEngineData()" class="px-4 py-2 bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 rounded-lg text-xs font-semibold transition">
+            <i class="fa-solid fa-triangle-exclamation"></i> Reset Server State & Storage
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Toast Notification System Container -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm pointer-events-none"></div>
+
+  <!-- JavaScript Logic Engine -->
+  <script>
+    /* ================================================================= */
+    /* IN-MEMORY / LOCALSTORAGE BACKEND STATE EMULATOR */
+    /* ================================================================= */
+
+    const JWT_SECRET = "secret_key_nexus_2025";
+
+    // Initial Seed State
+    const defaultState = {
+      users: [
+        {
+          id: "usr_admin_01",
+          email: "admin@nexus.io",
+          name: "System Admin",
+          passwordHash: "$2b$10$e8Z4...v9K3a", // Bcrypt mock
+          rawPass: "Admin123!",
+          role: "admin",
+          mfaEnabled: true,
+          createdAt: new Date(Date.now() - 86400000 * 30).toISOString()
+        },
+        {
+          id: "usr_member_02",
+          email: "user@nexus.io",
+          name: "Standard User",
+          passwordHash: "$2b$10$9aX2...u1P8z",
+          rawPass: "User123
+</body>
+</html>

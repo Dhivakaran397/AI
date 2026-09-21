@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gallery - Modern Visual Showcase</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: #0b0f19;
+      color: #f1f5f9;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header */
+    header {
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      padding: 1.25rem 2rem;
+    }
+
+    .header-content {
+      max-width: 1280px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .brand-icon {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, #6366f1, #a855f7);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+    }
+
+    .brand-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      background: linear-gradient(to right, #ffffff, #cbd5e1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.02em;
+    }
+
+    .stats {
+      font-size: 0.85rem;
+      color: #94a3b8;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 0.4rem 0.85rem;
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    /* Hero Section */
+    .hero {
+      text-align: center;
+      padding: 3rem 1.5rem 2rem;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .hero h1 {
+      font-size: 2.75rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 0.75rem;
+      background: linear-gradient(to right, #ffffff, #94a3b8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero p {
+      color: #94a3b8;
+      font-size: 1.1rem;
+      line-height: 1.6;
+    }
+
+    /* Filter Tabs */
+    .filters {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      margin: 1.5rem 0 2.5rem;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #cbd5e1;
+      padding: 0.5rem 1.25rem;
+      border-radius: 9999px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .filter-btn:hover, .filter-btn.active {
+      background: #6366f1;
+      color: #ffffff;
+      border-color: #6366f1;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+
+    /* Gallery Grid */
+    .gallery-container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 2rem 4rem;
+      flex: 1;
+      width: 100%;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .card {
+      background: #1e293b;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
+      position: relative;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+      border-color: rgba(99, 102, 241, 0.4);
+    }
+
+    .card-img-wrapper {
+      position: relative;
+      width: 100%;
+      height: 240px;
+      overflow: hidden;
+      background: #0f172a;
+    }
+
+    .card-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.5s ease;
+    }
+
+    .card:hover .card-img {
+      transform: scale(1.08);
+    }
+
+    .card-tag {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(8px);
+      color: #e2e8f0;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .card-content {
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+
+    .card-title {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: #ffffff;
+      margin-bottom: 0.4rem;
+    }
+
+    .card-desc {
+      font-size: 0.85rem;
+      color: #94a3b8;
+      line-height: 1.5;
+      margin-bottom: 1rem;
+      flex: 1;
+    }
+
+    .card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 0.75rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 0.8rem;
+      color: #64748b;
+    }
+
+    .likes {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      color: #f43f5e;
+    }
+
+    /* Modal / Lightbox */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(10px);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    .modal.open {
+      display: flex;
+    }
+
+    .modal-content {
+      max-width: 900px;
+      max-height: 90vh;
+      background: #1e293b;
+      border-radius: 20px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      position: relative;
+    }
+
+    .modal-img {
+      width: 100%;
+      max-height: 65vh;
+      object-fit: cover;
+    }
+
+    .modal-body {
+      padding: 1.5rem;
+    }
+
+    .close-btn {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: rgba(0, 0, 0, 0.6);
+      color: #fff;
+      border: none;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      font-size: 1.2rem;
+      cursor: pointer;
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 2rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      font-size: 0.85rem;
+      color: #64748b;
+      margin-top: auto;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="header-content">
+      <div class="brand">
+        <div class="brand-icon">📸</div>
+        <div class="brand-title">Visual Gallery</div>
+      </div>
+      <div class="stats">6 Featured Photos</div>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero">
+    <h1>Explore the Visual World</h1>
+    <p>A curated showcase of nature, architecture, and urban photography crafted with lightweight modern HTML & CSS.</p>
+    
+    <div class="filters">
+      <button class="filter-btn active" onclick="filterGallery('all')">All</button>
+      <button class="filter-btn" onclick="filterGallery('Nature')">Nature</button>
+      <button class="filter-btn" onclick="filterGallery('Architecture')">Architecture</button>
+      <button class="filter-btn" onclick="filterGallery('Urban')">Urban</button>
+    </div>
+  </section>
+
+  <!-- Gallery Grid -->
+  <main class="gallery-container">
+    <div class="grid" id="galleryGrid">
+      
+      <!-- Card 1 -->
+      <div class="card" data-category="Nature" onclick="openLightbox('https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1200&q=80', 'Alpine Whispers', 'Towering mountain peaks bathed in golden hour mist over an emerald lake.')">
+        <div class="card-img-wrapper">
+          <span class="card-tag">Nature</span>
+          <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&q=80" alt="Alpine Mountain" class="card-img">
+        </div>
+        <div class="card-content">
+          <h3 class="card-title">Alpine Whispers</h3>
+          <p class="card-desc">Towering mountain peaks bathed in golden hour mist over an emerald lake.</p>
+          <div class="card-footer">
+            <span>Yosemite Valley</span>
+            <span class="likes">❤️ 1.4k</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 2 -->
+      <div class="card" data-category="Architecture" onclick="openLightbox('https://images.unsplash.com/photo-1513694203232-719a280e022f?w=1200&q=80', 'Modernist Geometry', 'Clean lines, warm lighting, and minimalist interior architectural aesthetics.')">
+        <div class="card-img-wrapper">
+          <span class="card-tag">Architecture</span>
+          <img src="https://images.unsplash.com/photo-1513694203232-719a280e022f?w=800&q=80" alt="Interior Architecture" class="card-img">
+        </div>
+        <div class="card-content">
+          <h3 class="card-title">Modernist Geometry</h3>
+          <p class="card-desc">Clean lines, warm lighting, and minimalist interior architectural aesthetics.</p>
+          <div class="card-footer">
+            <span>Nordic Design</span>
+            <span class="likes">❤️ 980</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 3 -->
+      <div class="card" data-category="Urban" onclick="openLightbox('https://images.unsplash.com/photo-1514565131-fce0801e5785?w=1200&q=80', 'Neon Metropolis', 'Vibrant evening street life reflections across rain-soaked asphalt.')">
+        <div class="card-img-wrapper">
+          <span class="card-tag">Urban</span>
+          <img src="https://images.unsplash.com/photo-1514565131-fce0801e5785?w=800&q=80" alt="Tokyo Night" class="card-img">
+        </div>
+        <div class="card-content">
+          <h3 class="card-title">Neon Metropolis</h3>
+          <p class="card-desc">Vibrant evening street life reflections across rain-soaked asphalt.</p>
+          <div class="card-footer">
+            <span>Tokyo, Japan</span>
+            <span class="likes">❤️ 2.1k</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 4 -->
+      <div class="card" data-category="Nature" onclick="openLightbox('https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=1200&q=80', 'Misty Woodland', 'Morning sunlight piercing through dense redwood canopy.')">
+        <div class="card-img-wrapper">
+          <span class="card-tag">Nature</span>
+          <img src="https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=800&q=80" alt="Forest Sunbeams" class="card-img">
+        </div>
+        <div class="card-content">
+          <h3 class="card-title">Misty Woodland</h3>
+          <p class="card-desc">Morning sunlight piercing through dense redwood canopy.</p>
+          <div class="card-footer">
+            <span>Pacific Northwest</span>
+            <span class="likes">❤️ 1.8k</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 5 -->
+      <div class="card" data-category="Architecture" onclick="openLightbox('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200&q=80', 'Skyward Glass', 'Reflective skyscraper glass facades reaching into the azure afternoon.')">
+        <div class="card-img-wrapper">
+          <span class="card-tag">Architecture</span>
+          <img src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&q=80" alt="Skyscraper" class="card-img">
+        </div>
+        <div class="card-content">
+          <h3 class="card-title">Skyward Glass</h3>
+          <p class="card-desc">Reflective skyscraper glass facades reaching into the azure afternoon.</p>
+          <div class="card-footer">
+            <span>Frankfurt CBD</span>
+            <span class="likes">❤️ 860</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 6 -->
+      <div class="card" data-category="Urban" onclick="openLightbox('https://images.unsplash.com/photo-1477959858617-67f30bc75b82?w=1200&q=80', 'Cityscape Twilight', 'Dense skyline silhouettes sparkling as dusk sets over the bay.')">
+        <div class="card-img-wrapper">
+          <span class="card-tag">Urban</span>
+          <img src="https://images.unsplash.com/photo-1477959858617-67f30bc75b82?w=800&q=80" alt="Chicago Skyline" class="card-img">
+        </div>
+        <div class="card-content">
+          <h3 class="card-title">Cityscape Twilight</h3>
+          <p class="card-desc">Dense skyline silhouettes sparkling as dusk sets over the bay.</p>
+          <div class="card-footer">
+            <span>Chicago River</span>
+            <span class="likes">❤️ 3.2k</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Lightbox Modal -->
+  <div class="modal" id="modal" onclick="closeLightbox(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <button class="close-btn" onclick="closeLightbox()">&times;</button>
+      <img src="" id="modalImg" class="modal-img" alt="Zoomed view">
+      <div class="modal-body">
+        <h3 id="modalTitle" style="color: #fff; margin-bottom: 0.5rem;"></h3>
+        <p id="modalDesc" style="color: #94a3b8; font-size: 0.95rem;"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <p>&copy; 2026 Visual Gallery. Built with pure HTML & CSS. Powered by DAI Intelligence.</p>
+  </footer>
+
+  <script>
+    function filterGallery(category) {
+      const buttons = document.querySelectorAll('.filter-btn');
+      buttons.forEach(btn => {
+        if (btn.textContent.trim().toLowerCase() === category.toLowerCase()) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+
+      const cards = document.querySelectorAll('.card');
+      cards.forEach(card => {
+        if (category === 'all' || card.dataset.category.toLowerCase() === category.toLowerCase()) {
+          card.style.display = 'flex';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    }
+
+    function openLightbox(imgSrc, title, desc) {
+      document.getElementById('modalImg').src = imgSrc;
+      document.getElementById('modalTitle').textContent = title;
+      document.getElementById('modalDesc').textContent = desc;
+      document.getElementById('modal').classList.add('open');
+    }
+
+    function closeLightbox() {
+      document.getElementById('modal').classList.remove('open');
+    }
+  </script>
+</body>
+</html>
