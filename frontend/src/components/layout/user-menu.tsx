@@ -3,8 +3,6 @@
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import {
-  SignedIn,
-  SignedOut,
   SignInButton,
   SignUpButton,
   UserButton,
@@ -25,7 +23,7 @@ import { useState, useEffect } from "react";
 import { apiClient } from "@/lib/api-client";
 
 export function UserMenu() {
-  const { user, isLoaded } = useUser();
+  const { user, isLoaded, isSignedIn } = useUser();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const { theme, resolvedTheme, setTheme } = useTheme();
@@ -56,7 +54,7 @@ export function UserMenu() {
 
   return (
     <div className="w-full">
-      <SignedIn>
+      {isSignedIn ? (
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
@@ -115,9 +113,7 @@ export function UserMenu() {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-      </SignedIn>
-
-      <SignedOut>
+      ) : (
         <div className="flex flex-col gap-2 p-2 group-data-[collapsible=icon]:p-0">
           <SignInButton mode="modal">
             <Button size="sm" className="w-full justify-start gap-2 h-8 text-xs">
@@ -136,7 +132,7 @@ export function UserMenu() {
             </Button>
           </SignUpButton>
         </div>
-      </SignedOut>
+      )}
     </div>
   );
 }

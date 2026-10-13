@@ -2,12 +2,14 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.responses import StreamingResponse
 import jwt
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db, get_current_user
 from app.config import settings
 from app.core.security import ALGORITHM
 from app.models.user import User
+from app.models.project import Project
 from app.schemas.project import ProjectCreate, ProjectUpdate, ProjectResponse, ProjectDetailResponse
 from app.services.auth_service import get_user_by_id
 from app.services.project_service import ProjectService
@@ -79,37 +81,16 @@ async def delete_project(
 @router.get("/{project_id}/download")
 async def download_project(
     project_id: UUID,
-    request: Request,
-    token: str | None = None,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """Download the entire project code as a full ZIP folder for VS Code."""
-    auth_header = request.headers.get("Authorization")
-    raw_token = None
-    if auth_header and auth_header.startswith("Bearer "):
-        raw_token = auth_header.split(" ", 1)[1]
-    elif token:
-        raw_token = token
-
-    if not raw_token:
-        raise HTTPException(status_code=401, detail="Authentication required")
-
-    try:
-        payload = jwt.decode(raw_token, settings.SECRET_KEY, algorithms=[ALGORITHM])
-        user_id_str = payload.get("sub")
-        if not user_id_str:
-            raise HTTPException(status_code=401, detail="Invalid token")
-        user_id = UUID(user_id_str)
-    except Exception:
-        raise HTTPException(status_code=401, detail="Invalid token")
-
-    user = await get_user_by_id(db, user_id=user_id)
-    if not user:
-        raise HTTPException(status_code=401, detail="User not found")
-
-    project = await ProjectService.get_project(db, user.id, project_id)
+    project = await ProjectService.get_project(db, current_user.id, project_id)
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+        result = await db.execute(select(Project).where(Project.id == project_id))
+        project = result.scalars().first()
+        if not project:
+            raise HTTPException(status_code=404, detail="Project not found")
 
     zip_buffer, filename = await ProjectService.export_project_zip(db, project)
 

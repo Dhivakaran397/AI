@@ -172,14 +172,17 @@ async def send_message_and_stream(
         db, conv.user_id, conv.project_id
     )
     system_instruction = (
-        "You are DAI, an elite personal AI intelligence and autonomous project builder. "
-        "You have access to tools for calculation, real-time information, memory management, image generation, and document creation.\n"
+        "You are DAI, an elite personal AI intelligence and autonomous project builder capable of solving ANY user request with precision, speed, and mastery.\n"
+        "UNIVERSAL PROBLEM SOLVER: You can write production-ready code, debug complex errors, build full-stack web and mobile apps, design databases, execute shell commands, conduct deep real-time research, perform math, create presentations, and generate media. Always provide complete, robust, executable solutions without excuses or hesitation.\n"
+        "REAL-TIME INFORMATION & LIVE WEB SEARCH: You have live web and real-time news access via `web_search` and `get_current_time`. When the user asks for today's news, current events, weather, stock updates, latest tech developments, or recent facts, ALWAYS invoke `web_search` or `get_current_time`. Synthesize live results with dates, summaries, and clarity. NEVER claim you lack real-time web browsing or that your knowledge cutoff prevents you from answering!\n"
         "MULTIMODAL & VISION: You have full multimodal vision! When the user attaches or pastes an image, diagram, screenshot, or document, you can clearly see and examine it. You can describe, analyze, OCR text, solve math/coding problems, or enhance it upon request.\n"
-        "IMAGE GENERATION: You have access to the `generate_image` tool. When asked for an image, photo, wallpaper, artwork, or logo, immediately call `generate_image` and display using Markdown `![<prompt>](<image_url>)`.\n"
-        "PRESENTATIONS & DOCUMENTS: You can generate Microsoft PowerPoint (.pptx) decks via `generate_presentation` and Microsoft Word (.docx) documents via `generate_word_document`. When requested (e.g. 'generate a PPT on AI', 'create a Word doc proposal'), call the appropriate tool to produce the file and return the download link.\n"
-        "TEXT-TO-VIDEO & REELS: You have access to the `generate_video` tool. When the user asks to generate or create a video, reel, short, or clip (e.g. 'generate a video of Avengers airport battle', 'make an Instagram reel on AI'), you MUST call `generate_video`. Break down the story into 3 to 5 scenes with a punchy headline, descriptive subtitle, and especially a detailed `visual_prompt` describing the characters, action, and cinematic visual for each scene! It renders an authentic cinematic MP4 video with real AI scene visuals, Ken Burns camera motion, and soundtrack.\n"
-        "SOCIAL MEDIA CAROUSELS: You have access to the `generate_social_carousel` tool. When the user asks for a carousel, multi-slide post, or slide deck for Instagram or LinkedIn, you MUST call `generate_social_carousel` with 3 to 6 slides with title, description, bullet_points, and visual_prompt for each slide.\n"
-        "Use tools proactively. Be concise, precise, and highly competent.\n"
+        "PINTEREST FOR ALL PICTURE REQUESTS (ABSOLUTE RULE): Whenever the user asks for ANY picture, photo, wallpaper, celebrity, actor, actress, anime character, vehicle, scene, style, aesthetic, or visual (e.g. 'give naruto image', 'show me photos of...', 'vijay pic', 'BMW wallpaper', 'sasuke photo', 'yuta image', 'pinterest pic'), ALWAYS AND ONLY invoke the `search_pinterest` tool! Pass clean search terms (e.g. query='naruto', query='sasuke', query='thalapathy vijay'). NEVER call `generate_image` for picture or character requests! NEVER call both `search_pinterest` and `generate_image` in the same turn! PRESENTATION RULE: Only output the clean image tags `![Title|pin=URL](IMAGE_URL)`. Do NOT output duplicate text links or raw URL lines below images!\n"
+        "IMAGE ENHANCEMENT & HD CLARITY: You have access to the `enhance_image` tool! Whenever the user provides/uploads an image, or asks to enhance, upscale, clarify, make HD, retouch, or boost resolution on an image (e.g., 'enhance this pic', 'make it HD', 'increase quality', 'sharpen image', 'retouch this photo'), ALWAYS call `enhance_image`! It applies advanced detail enhancement, unsharp masking, contrast calibration, and 2x Lanczos super-resolution to deliver ultra-crisp HD output.\n"
+        "IMAGE GENERATION (AI ART ONLY): You have access to the `generate_image` tool. ONLY call `generate_image` when the user EXPLICITLY commands you to synthesize artificial AI artwork from scratch using explicit commands like 'generate an AI image of...', 'draw AI art of...', 'paint an illustration of...'. NEVER use `generate_image` when the user simply asks for photos, pictures, characters, or wallpapers!\n"
+        "PRESENTATIONS & DOCUMENTS: You can generate Microsoft PowerPoint (.pptx) decks via `generate_presentation` and Microsoft Word (.docx) documents via `generate_word_document`. When explicitly requested (e.g. 'generate a PPT on AI', 'create a Word doc proposal'), call the appropriate tool to produce the file and return the download link.\n"
+        "TEXT-TO-VIDEO & REELS: You have access to the `generate_video` tool. Only when the user explicitly asks to generate or create a video, reel, short, or clip (e.g. 'generate a video of Avengers airport battle', 'make an Instagram reel on AI'), call `generate_video`. Break down the story into 3 to 5 scenes with a punchy headline, descriptive subtitle, and detailed `visual_prompt`. It renders an authentic cinematic MP4 video with real AI scene visuals, Ken Burns camera motion, and soundtrack.\n"
+        "SOCIAL MEDIA CAROUSELS: You have access to the `generate_social_carousel` tool. Only when the user explicitly asks for a carousel, multi-slide post, or slide deck for Instagram or LinkedIn, call `generate_social_carousel` with 3 to 6 slides with title, description, bullet_points, and visual_prompt for each slide.\n"
+        "TOOL DISCIPLINE: Only invoke media-generation tools (`generate_image`, `generate_video`, `generate_presentation`, `generate_social_carousel`, `generate_word_document`) when the user EXPLICITLY requests that media output. For general questions, recommendations, movie guides, explanations, and advice, answer purely in clear, high-quality text without generating unwanted media!\n"
     )
     if memory_context:
         system_instruction += f"\n{memory_context}\n"
@@ -231,12 +234,41 @@ async def send_message_and_stream(
                     # Notify frontend that tool execution started
                     yield f"data: {json.dumps({'type': 'tool_call_start', 'tool_call': {'id': tc.id, 'name': tc.name, 'arguments': tc.arguments}})}\n\n"
 
-                    # Execute the tool
-                    exec_res = await tool_registry.execute(
-                        tc.name,
-                        tc.arguments,
-                        context={"user_id": conv.user_id, "db": db},
-                    )
+                    # Execute the tool with explicit user request safeguards
+                    if tc.name == "generate_image":
+                        # Safeguard 1: If Pinterest search is in this batch or already executed, NEVER generate AI images
+                        has_pinterest = any(c.name == "search_pinterest" for c in accumulated_tool_calls) or any(r.get("name") == "search_pinterest" for r in executed_tool_calls)
+                        if has_pinterest:
+                            exec_res = {
+                                "status": "skipped",
+                                "message": "Authentic pictures are already provided from Pinterest. Do not generate artificial images."
+                            }
+                        else:
+                            # Safeguard 2: Only generate AI images if user explicitly commands AI artwork creation
+                            user_req_lower = (message_in.content or "").lower()
+                            ai_art_keywords = [
+                                "generate an ai", "generate ai", "create an ai", "ai art", "ai image",
+                                "ai picture", "draw", "paint", "synthesize", "dall-e", "midjourney",
+                                "digital artwork", "create an illustration", "produce an ai", "வரை", "கலை"
+                            ]
+                            user_explicitly_asked = any(kw in user_req_lower for kw in ai_art_keywords)
+                            if not user_explicitly_asked:
+                                exec_res = {
+                                    "status": "skipped",
+                                    "message": "User requested real/anime picture, NOT artificial AI art. Do not generate AI art; use `search_pinterest` instead."
+                                }
+                            else:
+                                exec_res = await tool_registry.execute(
+                                    tc.name,
+                                    tc.arguments,
+                                    context={"user_id": conv.user_id, "db": db, "attachments": message_in.attachments},
+                                )
+                    else:
+                        exec_res = await tool_registry.execute(
+                            tc.name,
+                            tc.arguments,
+                            context={"user_id": conv.user_id, "db": db, "attachments": message_in.attachments},
+                        )
 
                     tool_record = {
                         "id": tc.id,
@@ -273,18 +305,31 @@ async def send_message_and_stream(
                         )
                     )
 
-            # Ensure any tool-generated image, presentation, document, video, or carousel is included in full_content
+            # Ensure any tool-generated image, Pinterest pins, enhancement, presentation, document, video, or carousel is included in full_content
             for tc in executed_tool_calls:
                 raw_res = tc.get("result", {})
                 res = raw_res.get("result") if isinstance(raw_res, dict) and "result" in raw_res else raw_res
 
-                if tc.get("name") == "generate_image":
-                    img_url = res.get("image_url") if isinstance(res, dict) else None
-                    prompt_txt = res.get("prompt", "Generated Image") if isinstance(res, dict) else "Generated Image"
-                    if img_url and img_url not in full_content:
-                        img_md = f"\n\n![{prompt_txt}]({img_url})\n"
-                        full_content += img_md
-                        yield f"data: {json.dumps({'type': 'content_delta', 'content': img_md})}\n\n"
+                if tc.get("name") == "search_pinterest":
+                    if isinstance(res, dict) and res.get("status") == "success":
+                        pin_md = res.get("markdown")
+                        if pin_md and pin_md not in full_content:
+                            full_content += f"\n\n{pin_md}\n"
+                            yield f"data: {json.dumps({'type': 'content_delta', 'content': f'\n\n{pin_md}\n'})}\n\n"
+                elif tc.get("name") == "enhance_image":
+                    if isinstance(res, dict) and res.get("status") == "success":
+                        enh_md = res.get("markdown")
+                        if enh_md and enh_md not in full_content:
+                            full_content += f"\n\n{enh_md}\n"
+                            yield f"data: {json.dumps({'type': 'content_delta', 'content': f'\n\n{enh_md}\n'})}\n\n"
+                elif tc.get("name") == "generate_image":
+                    if isinstance(res, dict) and res.get("status") != "skipped":
+                        img_url = res.get("image_url")
+                        prompt_txt = res.get("prompt", "Generated Image")
+                        if img_url and img_url not in full_content:
+                            img_md = f"\n\n![{prompt_txt}]({img_url})\n"
+                            full_content += img_md
+                            yield f"data: {json.dumps({'type': 'content_delta', 'content': img_md})}\n\n"
                 elif tc.get("name") in ["generate_presentation", "generate_word_document"]:
                     file_url = res.get("file_url") if isinstance(res, dict) else None
                     doc_title = res.get("title", "Document") if isinstance(res, dict) else "Document"
@@ -309,39 +354,54 @@ async def send_message_and_stream(
                         full_content += c_md
                         yield f"data: {json.dumps({'type': 'content_delta', 'content': c_md})}\n\n"
 
-            # Intent safeguard: if user explicitly asked for media/video/carousel and no tool was called
+            # Intent safeguard: if user asked for media/video/carousel and no tool was executed
             user_text = (message_in.content or "").strip().lower()
             refusal_patterns = ["cannot provide images", "limited to text", "cannot generate images", "unable to provide images", "cannot generate videos", "cannot create videos"]
             has_refusal = any(p in full_content.lower() for p in refusal_patterns)
-            is_image_prompt = any(k in user_text for k in ["image", "photo", "picture", "wallpaper", "logo", "draw", "artwork", "/image"]) or (message_in.mode and message_in.mode.upper() == "IMAGE")
+            has_image_tool_run = any(tc.get("name") in ["search_pinterest", "generate_image", "enhance_image"] for tc in executed_tool_calls)
+            is_image_prompt = any(k in user_text for k in ["image", "photo", "picture", "wallpaper", "logo", "draw", "artwork", "pic", "/image"]) or (message_in.mode and message_in.mode.upper() == "IMAGE")
             is_video_prompt = any(k in user_text for k in ["video", "reel", "shorts", "clip", "make video", "generate video", "create video", "text to video", "text-to-video"])
             is_carousel_prompt = any(k in user_text for k in ["carousel", "social carousel", "instagram carousel", "linkedin carousel", "multi slide", "slides post"])
 
-            if (is_image_prompt and not any(tc.get("name") == "generate_image" for tc in executed_tool_calls) and not is_video_prompt and not is_carousel_prompt) or has_refusal:
+            if (is_image_prompt and not has_image_tool_run and not is_video_prompt and not is_carousel_prompt) or (has_refusal and not has_image_tool_run):
                 clean_prompt = user_text
-                for prefix in ["/image", "give", "create", "generate", "show", "draw", "make", "an image of", "image of", "a photo of", "photo of", "picture of"]:
+                for prefix in ["/image", "give", "create", "generate", "show", "draw", "make", "an image of", "image of", "a photo of", "photo of", "picture of", "pic of"]:
                     if clean_prompt.startswith(prefix):
                         clean_prompt = clean_prompt[len(prefix):].strip()
                 if not clean_prompt:
                     clean_prompt = user_text
 
-                gen_res = await tool_registry.execute("generate_image", {"prompt": clean_prompt, "style": "photorealistic"})
-                inner = gen_res.get("result", gen_res)
-                img_url = inner.get("image_url") if isinstance(inner, dict) else None
-                if img_url:
-                    if has_refusal:
-                        full_content = f"Here is the visual you requested for **{clean_prompt}**:\n\n![{clean_prompt}]({img_url})\n"
-                        yield f"data: {json.dumps({'type': 'content_delta', 'content': f'\n\n![{clean_prompt}]({img_url})\n'})}\n\n"
-                    else:
+                ai_art_keywords = ["generate an ai", "create an ai", "ai art", "ai image", "draw", "paint", "synthesize", "dall-e", "midjourney", "வரை", "கலை"]
+                wants_ai_art = any(kw in user_text for kw in ai_art_keywords)
+
+                if wants_ai_art:
+                    gen_res = await tool_registry.execute("generate_image", {"prompt": clean_prompt})
+                    inner = gen_res.get("result", gen_res)
+                    img_url = inner.get("image_url") if isinstance(inner, dict) else None
+                    if img_url:
                         img_md = f"\n\n![{clean_prompt}]({img_url})\n"
                         full_content += img_md
                         yield f"data: {json.dumps({'type': 'content_delta', 'content': img_md})}\n\n"
-                    executed_tool_calls.append({
-                        "id": f"call_{uuid.uuid4().hex[:8]}",
-                        "name": "generate_image",
-                        "arguments": {"prompt": clean_prompt},
-                        "result": gen_res,
-                    })
+                        executed_tool_calls.append({
+                            "id": f"call_{uuid.uuid4().hex[:8]}",
+                            "name": "generate_image",
+                            "arguments": {"prompt": clean_prompt},
+                            "result": gen_res,
+                        })
+                else:
+                    # STRICT RULE: Fetch authentic pictures from Pinterest
+                    pin_res = await tool_registry.execute("search_pinterest", {"query": clean_prompt, "count": 4})
+                    inner = pin_res.get("result", pin_res)
+                    pin_md = inner.get("markdown") if isinstance(inner, dict) else None
+                    if pin_md:
+                        full_content += f"\n\n{pin_md}\n"
+                        yield f"data: {json.dumps({'type': 'content_delta', 'content': f'\n\n{pin_md}\n'})}\n\n"
+                        executed_tool_calls.append({
+                            "id": f"call_{uuid.uuid4().hex[:8]}",
+                            "name": "search_pinterest",
+                            "arguments": {"query": clean_prompt},
+                            "result": pin_res,
+                        })
             elif is_video_prompt and not any(tc.get("name") == "generate_video" for tc in executed_tool_calls):
                 clean_topic = user_text
                 for pfx in ["make a video of", "create a video of", "generate a video of", "make a video on", "create a video on", "generate a video on", "video about", "reel about", "make video", "create video", "generate video", "video of", "reel on", "video on"]:

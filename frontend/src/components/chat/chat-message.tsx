@@ -90,15 +90,6 @@ export function ChatMessage({
             : "bg-muted/90 border border-border/40"
         )}
       >
-        {/* Tool Calls Display */}
-        {toolCalls && toolCalls.length > 0 && (
-          <div className="space-y-1.5 pb-2 border-b border-border/40">
-            {toolCalls.map((tc, idx) => (
-              <ToolCallBadge key={tc.id || idx} toolCall={tc} />
-            ))}
-          </div>
-        )}
-
         {/* User Attachments Display */}
         {isUser && attachments && attachments.length > 0 && (
           <div className="flex flex-wrap gap-2 pb-1">
@@ -328,6 +319,7 @@ export function ChatMessage({
 function ToolCallBadge({ toolCall }: { toolCall: ToolCallRecord }) {
   const [open, setOpen] = useState(false);
   const isImageTool = toolCall.name === "generate_image";
+  const isPinterestTool = toolCall.name === "search_pinterest";
   const isPptTool = toolCall.name === "generate_presentation";
   const isWordTool = toolCall.name === "generate_word_document";
   const isVideoTool = toolCall.name === "generate_video";
@@ -338,6 +330,7 @@ function ToolCallBadge({ toolCall }: { toolCall: ToolCallRecord }) {
   const fileUrl = resultObj?.file_url;
   const videoUrl = resultObj?.video_url;
   const carouselSlides = resultObj?.slides;
+  const pinterestPins = resultObj?.pins;
 
   return (
     <div className="text-xs">
@@ -348,6 +341,10 @@ function ToolCallBadge({ toolCall }: { toolCall: ToolCallRecord }) {
         >
           {isImageTool ? (
             <Sparkles className="h-3.5 w-3.5 text-pink-500" />
+          ) : isPinterestTool ? (
+            <span className="h-3.5 w-3.5 rounded-full bg-red-600 text-white flex items-center justify-center text-[9px] font-bold shrink-0">
+              P
+            </span>
           ) : isPptTool ? (
             <Presentation className="h-3.5 w-3.5 text-orange-500" />
           ) : isWordTool ? (
@@ -362,6 +359,8 @@ function ToolCallBadge({ toolCall }: { toolCall: ToolCallRecord }) {
           <span className="font-semibold">
             {isImageTool
               ? "AI Image Generator"
+              : isPinterestTool
+              ? "Pinterest Pin Search"
               : isPptTool
               ? "PowerPoint Deck Creator"
               : isWordTool
@@ -378,6 +377,7 @@ function ToolCallBadge({ toolCall }: { toolCall: ToolCallRecord }) {
             className={cn(
               "px-1.5 py-0 text-[10px] font-mono",
               isImageTool && "bg-pink-500/10 text-pink-500 border-pink-500/30",
+              isPinterestTool && "bg-red-500/10 text-red-500 border-red-500/30",
               isPptTool && "bg-orange-500/10 text-orange-500 border-orange-500/30",
               isWordTool && "bg-blue-500/10 text-blue-500 border-blue-500/30",
               isVideoTool && "bg-violet-500/10 text-violet-400 border-violet-500/30",
@@ -420,6 +420,22 @@ function ToolCallBadge({ toolCall }: { toolCall: ToolCallRecord }) {
           </span>
         )}
 
+        {pinterestPins && pinterestPins.length > 0 && (
+          <a
+            href={`https://www.pinterest.com/search/pins/?q=${encodeURIComponent(
+              String(toolCall.arguments?.query || "popular")
+            )}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 text-[11px] text-red-500 hover:text-red-400 font-medium underline"
+          >
+            <span className="h-3 w-3 rounded-full bg-red-600 text-white flex items-center justify-center text-[8px] font-bold">
+              P
+            </span>
+            <span>{pinterestPins.length} Pinterest Pins</span>
+          </a>
+        )}
+
         {fileUrl && (
           <a
             href={fileUrl}
@@ -438,6 +454,38 @@ function ToolCallBadge({ toolCall }: { toolCall: ToolCallRecord }) {
 
       {open && (
         <div className="mt-2 p-3 rounded-lg bg-background/90 border border-border/40 text-[11px] font-mono space-y-2">
+          {isPinterestTool && pinterestPins && pinterestPins.length > 0 && (
+            <div className="pb-2 mb-2 border-b border-border/40">
+              <div className="text-xs font-semibold text-foreground mb-2 flex items-center gap-1.5 font-sans">
+                <span className="h-3.5 w-3.5 rounded-full bg-red-600 text-white flex items-center justify-center text-[9px] font-bold">
+                  P
+                </span>
+                Found {pinterestPins.length} Authentic Pinterest Pins:
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 font-sans">
+                {pinterestPins.map((pin: any, pIdx: number) => (
+                  <a
+                    key={pIdx}
+                    href={pin.pin_url || pin.image_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group/pin block rounded-lg overflow-hidden border border-border/50 bg-background/50 hover:border-red-500/50 transition-all shadow-sm"
+                  >
+                    <div className="aspect-[3/4] bg-muted/30 relative overflow-hidden">
+                      <img
+                        src={pin.image_url}
+                        alt={pin.title || "Pinterest Pin"}
+                        className="w-full h-full object-cover group-hover/pin:scale-105 transition-transform"
+                      />
+                    </div>
+                    <div className="p-1.5 text-[10px] text-muted-foreground group-hover/pin:text-foreground line-clamp-1">
+                      {pin.title || "View on Pinterest"}
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
           <div>
             <span className="text-muted-foreground font-semibold">Arguments: </span>
             <code>{JSON.stringify(toolCall.arguments, null, 2)}</code>
@@ -460,7 +508,22 @@ function ImageCard({ src, alt }: { src: string; alt: string }) {
   const [isZoomed, setIsZoomed] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
 
-  const cleanTitle = alt || "AI Generated Visual";
+  let rawTitle = alt || "";
+  let pinUrl = "";
+  if (rawTitle.includes("|pin=")) {
+    const parts = rawTitle.split("|pin=");
+    rawTitle = parts[0].trim();
+    pinUrl = parts[1].trim();
+  }
+
+  const hasLink = Boolean(pinUrl);
+  const cleanTitle = rawTitle.replace(/\|\s*Pinterest/gi, "").trim() || "Image";
+
+  const openLink = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const targetUrl = pinUrl || src;
+    window.open(targetUrl, "_blank");
+  };
 
   const handleDownload = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -473,7 +536,7 @@ function ImageCard({ src, alt }: { src: string; alt: string }) {
       const link = document.createElement("a");
       link.href = blobUrl;
       const safeName = cleanTitle.replace(/[^a-z0-9]/gi, "_").toLowerCase().slice(0, 32);
-      link.download = `${safeName || "ai_generated_visual"}.jpg`;
+      link.download = `${safeName || "image"}.jpg`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -494,8 +557,12 @@ function ImageCard({ src, alt }: { src: string; alt: string }) {
         >
           {!loaded && !error && (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-2.5 bg-muted/60 text-muted-foreground text-xs animate-pulse">
-              <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-              <span className="font-medium">Generating high-res visual...</span>
+              <div
+                className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin"
+              />
+              <span className="font-medium">
+                Loading image...
+              </span>
             </div>
           )}
 
@@ -569,18 +636,33 @@ function ImageCard({ src, alt }: { src: string; alt: string }) {
 
         <div className="px-3.5 py-2.5 bg-background/80 border-t border-border/40 flex items-center justify-between gap-2 text-xs">
           <div className="flex items-center gap-1.5 truncate">
-            <Sparkles className="h-3 w-3 text-pink-500 shrink-0" />
+            <ImageIcon className="h-3.5 w-3.5 text-primary shrink-0" />
             <span className="font-medium text-foreground/90 truncate">{cleanTitle}</span>
           </div>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={handleDownload}
-            className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground shrink-0 gap-1"
-          >
-            <Download className="h-3 w-3" />
-            <span>Download</span>
-          </Button>
+          <div className="flex items-center gap-1.5 shrink-0">
+            {hasLink && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={openLink}
+                className="h-7 px-2.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/60 gap-1.5 font-medium border border-border/40 rounded-md"
+                title="Open Link"
+              >
+                <ExternalLink className="h-3 w-3" />
+                <span>Link</span>
+              </Button>
+            )}
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={handleDownload}
+              className="h-7 px-2.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/60 gap-1.5 font-medium border border-border/40 rounded-md"
+              title="Download image"
+            >
+              <Download className="h-3 w-3" />
+              <span>Download</span>
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -594,6 +676,17 @@ function ImageCard({ src, alt }: { src: string; alt: string }) {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="absolute -top-10 right-0 flex items-center gap-2">
+              {hasLink && (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={openLink}
+                  className="h-8 text-xs gap-1.5 bg-white/20 hover:bg-white/30 text-white border-0 font-medium"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  <span>Link</span>
+                </Button>
+              )}
               <Button
                 size="sm"
                 variant="secondary"
@@ -701,8 +794,19 @@ function DocumentCard({ href, title }: { href: string; title: string }) {
 }
 
 function MessageContent({ content, isUser }: { content: string; isUser?: boolean }) {
+  // Strip out any redundant raw Pinterest command/link lines, e.g.:
+  // `[Title](https://...pinterest.com/pin/...) — 📌 Open Pin on Pinterest` or `(https://...pinterest.com/pin/...)`
+  // so ONLY the interactive picture cards with their Download & Pinterest Link buttons remain visible!
+  const cleanedContent = content
+    .replace(/^###\s*[\u{1F300}-\u{1F9FF}]?\s*Pinterest Results for[^\n]*\n+/gimu, "")
+    .replace(/\*?\*?\[[^\]]*\]\s*\(https?:\/\/[^\s)]*pinterest\.com[^\s)]*\)\*?\*?\s*(?:—[^\n]*)?/gi, "")
+    .replace(/\(https?:\/\/[^\s)]*pinterest\.com[^\s)]*\)/gi, "")
+    .replace(/—\s*[\u{1F300}-\u{1F9FF}]?\s*\[?Open Pin on Pinterest\]?\(?[^\s)]*\)?/giu, "")
+    .replace(/[\u{1F300}-\u{1F9FF}]?\s*Open Pin on Pinterest[^\n]*/giu, "")
+    .trim();
+
   const pattern = /(```[\s\S]*?```|!\[[^\]]*\]\([^)]+\)|\[[^\]]+\]\([^)]+\)|`[^`]+`|\*\*[^*]+\*\*|\*[^*]+\*)/g;
-  const parts = content.split(pattern);
+  const parts = cleanedContent.split(pattern);
 
   return (
     <>

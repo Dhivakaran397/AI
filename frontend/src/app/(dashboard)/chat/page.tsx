@@ -35,6 +35,10 @@ export default function ChatPage() {
 
   const [loading, setLoading] = useState(true);
 
+  useEffect(() => {
+    document.title = "DAI - Personal AI Assistant";
+  }, []);
+
   // Load conversations
   useEffect(() => {
     const loadConversations = async () => {

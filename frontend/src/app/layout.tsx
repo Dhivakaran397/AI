@@ -19,7 +19,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "DAI — Personal Intelligence & Project Builder",
+    default: "DAI",
     template: "%s | DAI",
   },
   description:
@@ -29,6 +29,7 @@ export const metadata: Metadata = {
     shortcut: "/dai.ico",
     apple: "/dai_logo.png",
   },
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({

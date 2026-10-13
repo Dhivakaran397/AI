@@ -37,7 +37,8 @@ from app.ai.tools.knowledge_tools import (
     SearchKnowledgeTool,
     IngestDocumentTool,
 )
-from app.ai.tools.image_tools import GenerateImageTool
+from app.ai.tools.image_tools import GenerateImageTool, EnhanceImageTool
+from app.ai.tools.pinterest_tools import SearchPinterestTool
 from app.ai.tools.document_tools import GeneratePresentationTool, GenerateWordDocumentTool
 from app.ai.tools.video_tools import GenerateVideoTool, GenerateCarouselTool
 
@@ -50,7 +51,9 @@ class ToolRegistry:
         self.register(CalculateTool())
         self.register(SaveMemoryTool())
         self.register(WebSearchTool())
+        self.register(SearchPinterestTool())
         self.register(GenerateImageTool())
+        self.register(EnhanceImageTool())
         self.register(GeneratePresentationTool())
         self.register(GenerateWordDocumentTool())
         self.register(GenerateVideoTool())

@@ -2,19 +2,24 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuthStore } from "@/stores/auth-store";
+import { useAuth } from "@clerk/nextjs";
 
 export default function RootPage() {
-  const { token } = useAuthStore();
+  const { isLoaded, isSignedIn } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (token) {
-      router.replace("/home");
+    if (!isLoaded) return;
+    if (isSignedIn) {
+      router.replace("/chat");
     } else {
       router.replace("/login");
     }
-  }, [token, router]);
+  }, [isLoaded, isSignedIn, router]);
 
-  return null;
+  return (
+    <div className="flex h-screen w-full items-center justify-center bg-background">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+    </div>
+  );
 }

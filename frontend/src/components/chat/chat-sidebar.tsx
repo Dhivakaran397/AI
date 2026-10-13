@@ -1,7 +1,6 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -21,6 +20,7 @@ export function ChatSidebar({
   onDeleteConversation,
 }: ChatSidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
 
   const handleDelete = (e: React.MouseEvent, convId: string) => {
@@ -60,10 +60,11 @@ export function ChatSidebar({
                   if (isConfirming) setConfirmingId(null);
                 }}
               >
-                <Link
-                  href={`/chat/${conv.id}`}
+                <button
+                  type="button"
+                  onClick={() => router.push(`/chat/${conv.id}`)}
                   className={cn(
-                    "flex flex-1 items-center gap-2 rounded-lg px-3 py-2 pr-8 text-sm transition-colors overflow-hidden",
+                    "flex flex-1 items-center gap-2 rounded-lg px-3 py-2 pr-8 text-sm transition-colors overflow-hidden text-left cursor-pointer",
                     isActive
                       ? "bg-accent text-accent-foreground font-medium"
                       : "text-muted-foreground hover:bg-accent/50"
@@ -71,7 +72,7 @@ export function ChatSidebar({
                 >
                   <MessageSquare className="h-4 w-4 shrink-0" />
                   <span className="truncate">{conv.title}</span>
-                </Link>
+                </button>
 
                 {onDeleteConversation && (
                   <button

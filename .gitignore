@@ -50,3 +50,11 @@ logs/
 *.bak
 *.tmp
 desktop_app/.webview_storage/
+electron_app/node_modules/
+backend/static/images/*
+backend/static/videos/*
+backend/workspaces/*
+backend/*.db
+backend/*.db-journal
+backend/*.db-wal
+

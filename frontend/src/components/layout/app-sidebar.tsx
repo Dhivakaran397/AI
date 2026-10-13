@@ -1,7 +1,6 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import {
   Sidebar,
   SidebarContent,
@@ -21,11 +20,16 @@ import { UserMenu } from "./user-menu";
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
 
   return (
     <Sidebar collapsible="icon" variant="sidebar">
       <SidebarHeader className="p-4">
-        <Link href="/" className="flex items-center gap-2 group-data-[collapsible=icon]:justify-center">
+        <button
+          type="button"
+          onClick={() => router.push("/")}
+          className="flex items-center gap-2 group-data-[collapsible=icon]:justify-center text-left bg-transparent border-none p-0 cursor-pointer outline-none"
+        >
           <img
             src="/dai_logo.png"
             alt="DAI Logo"
@@ -34,7 +38,7 @@ export function AppSidebar() {
           <span className="text-lg font-bold group-data-[collapsible=icon]:hidden">
             DAI
           </span>
-        </Link>
+        </button>
       </SidebarHeader>
       <SidebarSeparator />
       <SidebarContent>
@@ -48,9 +52,10 @@ export function AppSidebar() {
                 return (
                   <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton
-                      render={<Link href={item.href} />}
+                      onClick={() => router.push(item.href)}
                       isActive={isActive}
                       tooltip={item.title}
+                      className="cursor-pointer"
                     >
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>

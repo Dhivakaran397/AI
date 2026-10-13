@@ -1,0 +1,23 @@
+{
+  "name": "DAI",
+  "short_name": "DAI",
+  "description": "DAI - Personal Intelligence AI Workspace",
+  "start_url": "/chat",
+  "id": "/chat",
+  "display": "standalone",
+  "background_color": "#09090b",
+  "theme_color": "#09090b",
+  "icons": [
+    {
+      "src": "/dai_logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/dai.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}

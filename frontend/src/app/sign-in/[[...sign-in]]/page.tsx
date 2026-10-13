@@ -3,7 +3,18 @@ import { SignIn } from "@clerk/nextjs";
 export default function SignInPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <SignIn routing="path" path="/sign-in" signUpUrl="/sign-up" />
+      <SignIn
+        routing="path"
+        path="/sign-in"
+        signUpUrl="/sign-up"
+        fallbackRedirectUrl="/chat"
+        appearance={{
+          elements: {
+            rootBox: "w-full max-w-md",
+            card: "shadow-2xl border border-border/50",
+          },
+        }}
+      />
     </div>
   );
 }
